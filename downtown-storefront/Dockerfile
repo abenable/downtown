@@ -3,14 +3,14 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies for building
-RUN apk add --no-cache libc6-compat
+# Install bun and dependencies for building
+RUN apk add --no-cache libc6-compat && npm install -g bun
 
 # Copy package files
-COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* bun.lockb* ./
+COPY package.json bun.lockb* ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies with bun
+RUN bun install
 
 # Copy source code
 COPY . .
@@ -21,16 +21,14 @@ ARG NEXT_PUBLIC_BASE_URL
 ARG NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 ARG NEXT_PUBLIC_DEFAULT_REGION
 ARG NEXT_PUBLIC_STRIPE_KEY
-ARG REVALIDATE_SECRET
 
 ENV NEXT_PUBLIC_MEDUSA_BACKEND_URL=$NEXT_PUBLIC_MEDUSA_BACKEND_URL
 ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
 ENV NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=$NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 ENV NEXT_PUBLIC_DEFAULT_REGION=$NEXT_PUBLIC_DEFAULT_REGION
 ENV NEXT_PUBLIC_STRIPE_KEY=$NEXT_PUBLIC_STRIPE_KEY
-ENV REVALIDATE_SECRET=$REVALIDATE_SECRET
 
-# Build the application
+# Build the application with npm
 RUN npm run build
 
 # Production stage

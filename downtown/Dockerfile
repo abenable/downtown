@@ -3,19 +3,19 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies for building
-RUN apk add --no-cache python3 make g++
+# Install bun and dependencies for building native modules
+RUN apk add --no-cache python3 make g++ && npm install -g bun
 
 # Copy package files
-COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* bun.lockb* ./
+COPY package.json bun.lockb* ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies with bun
+RUN bun install
 
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application with npm
 RUN npm run build
 
 # Production stage
@@ -25,23 +25,20 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Install bun for package installation
+RUN npm install -g bun
+
 # Create non-root user
 RUN addgroup --system --gid 1001 medusa && \
     adduser --system --uid 1001 medusa
 
-# Copy built application
-COPY --from=builder --chown=medusa:medusa /app/.medusa ./.medusa
-COPY --from=builder --chown=medusa:medusa /app/node_modules ./node_modules
+# Copy built application (Medusa outputs to .medusa/server)
+COPY --from=builder --chown=medusa:medusa /app/.medusa/server ./.medusa/server
 COPY --from=builder --chown=medusa:medusa /app/package.json ./package.json
-COPY --from=builder --chown=medusa:medusa /app/medusa-config.ts ./medusa-config.ts
-COPY --from=builder --chown=medusa:medusa /app/tsconfig.json ./tsconfig.json
-
-# Copy source files needed at runtime
-COPY --from=builder --chown=medusa:medusa /app/src ./src
-COPY --from=builder --chown=medusa:medusa /app/static ./static
 
 USER medusa
 
 EXPOSE 9000
 
-CMD ["sh", "-c", "npx medusa db:migrate && npm run start"]
+# Follow Medusa deployment guide: cd to .medusa/server, install deps with bun, run migrations and start with npm
+CMD ["sh", "-c", "cd .medusa/server && bun install && npm run predeploy && npm run start"]

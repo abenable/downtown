@@ -1,5 +1,5 @@
 services:
-  # Downtown Backend
+  # Downtown Backend (Server Mode)
   downtown:
     build:
       context: .
@@ -8,15 +8,20 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      # Database
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
+      # Security
       JWT_SECRET: ${JWT_SECRET}
       COOKIE_SECRET: ${COOKIE_SECRET}
+      # CORS
       STORE_CORS: ${STORE_CORS:-http://localhost:8000}
       ADMIN_CORS: ${ADMIN_CORS:-http://localhost:9000}
       AUTH_CORS: ${AUTH_CORS:-http://localhost:8000,http://localhost:9000}
-      MEDUSA_ADMIN_ONBOARDING_TYPE: ${MEDUSA_ADMIN_ONBOARDING_TYPE:-nextjs}
-      MEDUSA_ADMIN_ONBOARDING_NEXTJS_DIRECTORY: ${MEDUSA_ADMIN_ONBOARDING_NEXTJS_DIRECTORY:-downtown-storefront}
+      # Worker Mode (server = handles API requests + admin)
+      MEDUSA_WORKER_MODE: ${MEDUSA_WORKER_MODE:-server}
+      DISABLE_MEDUSA_ADMIN: ${DISABLE_MEDUSA_ADMIN:-false}
+      MEDUSA_BACKEND_URL: ${MEDUSA_BACKEND_URL}
       # Stripe Payment
       STRIPE_API_KEY: ${STRIPE_API_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
