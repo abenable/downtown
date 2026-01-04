@@ -29,6 +29,15 @@ const upload = multer({
   },
 });
 
+// Wrap multer middleware to be compatible with Medusa's middleware types
+const multerUpload = (
+  req: MedusaRequest,
+  res: MedusaResponse,
+  next: MedusaNextFunction
+) => {
+  upload.array("files", 5)(req as any, res as any, next);
+};
+
 // CORS middleware for uploads
 const uploadCors = (
   req: MedusaRequest,
@@ -74,7 +83,7 @@ export default defineMiddlewares({
       method: ["POST"],
       middlewares: [
         authenticate(["customer", "vendor"], ["session", "bearer"]),
-        upload.array("files", 5),
+        multerUpload,
       ],
     },
     // Vendor registration - allow customer auth to become vendor
