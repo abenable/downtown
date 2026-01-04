@@ -79,13 +79,57 @@ module.exports = defineConfig({
       resolve: "./src/modules/marketplace",
     },
     {
-      resolve: "./src/modules/commission",
-    },
-    {
       resolve: "./src/modules/payout",
     },
     {
       resolve: "./src/modules/support",
+    },
+    {
+      resolve: "./src/modules/product-review",
+    },
+    {
+      resolve: "./src/modules/wishlist",
+    },
+    // Tax provider for platform fees
+    {
+      resolve: "@medusajs/medusa/tax",
+      options: {
+        providers: [
+          {
+            resolve: "./src/modules/platform-tax",
+            id: "platform-fee",
+            options: {
+              rate: 10, // 10% platform fee
+            },
+          },
+        ],
+      },
+    },
+    // Notification providers
+    {
+      resolve: "@medusajs/medusa/notification",
+      options: {
+        providers: [
+          // Local provider for non-email channels (feed, etc.)
+          {
+            resolve: "@medusajs/medusa/notification-local",
+            id: "local",
+            options: {
+              name: "Local Notification Provider",
+              channels: ["feed"],
+            },
+          },
+          // Email provider
+          {
+            resolve: "./src/modules/email-notification",
+            id: "email",
+            options: {
+              channels: ["email"],
+              from: process.env.EMAIL_FROM || "noreply@campusdowntown.com",
+            },
+          },
+        ],
+      },
     },
   ],
 });
