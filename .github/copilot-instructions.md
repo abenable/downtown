@@ -13,12 +13,15 @@ downtown-storefront/ # Next.js 15 frontend (port 8000)
 
 ### Custom Modules (`src/modules/`)
 
-| Module        | Purpose                         | Key Models              |
-| ------------- | ------------------------------- | ----------------------- |
-| `marketplace` | Multi-vendor core               | `Vendor`, `VendorAdmin` |
-| `commission`  | Order commissions (10% default) | `Commission`            |
-| `payout`      | Vendor payouts                  | `Payout`                |
-| `support`     | Vendor support tickets          | -                       |
+| Module               | Purpose                         | Key Models                 |
+| -------------------- | ------------------------------- | -------------------------- |
+| `marketplace`        | Multi-vendor core               | `Vendor`, `VendorAdmin`    |
+| `platform-tax`       | Platform fee tax provider (10%) | -                          |
+| `payout`             | Vendor payouts                  | `Payout`                   |
+| `support`            | Vendor support tickets          | -                          |
+| `product-review`     | Product reviews system          | `Review`                   |
+| `email-notification` | Email notification provider     | -                          |
+| `wishlist`           | Customer wishlist feature       | `Wishlist`, `WishlistItem` |
 
 ### Module Pattern
 
@@ -115,7 +118,19 @@ Backend requires: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `COOKIE_SECRET`, `S
 ## Key Conventions
 
 1. **Vendor Status Flow**: `pending` → `approved`/`rejected`
-2. **Commission**: Auto-calculated on orders (90% vendor, 10% platform)
+2. **Platform Fee**: 10% fee via custom tax provider (`platform-tax` module)
 3. **File Storage**: Cloudflare R2 (S3-compatible) via `@medusajs/file-s3`
 4. **Payments**: Stripe integration via `@medusajs/payment-stripe`
-5. **Testing**: Use `medusaIntegrationTestRunner` from `@medusajs/test-utils`
+5. **Notifications**: Email notifications via custom provider (`email-notification` module)
+6. **Testing**: Use `medusaIntegrationTestRunner` from `@medusajs/test-utils`
+
+## Subscribers (`src/subscribers/`)
+
+Event-driven notifications:
+
+| Event             | Subscriber           | Description                    |
+| ----------------- | -------------------- | ------------------------------ |
+| `order.placed`    | `order-placed.ts`    | Order confirmation to customer |
+| `order.completed` | `order-completed.ts` | Order fulfillment notification |
+| `vendor.approved` | `vendor-approved.ts` | Vendor approval notification   |
+| `vendor.rejected` | `vendor-rejected.ts` | Vendor rejection notification  |
