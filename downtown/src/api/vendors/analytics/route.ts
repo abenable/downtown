@@ -3,8 +3,8 @@ import type {
   MedusaResponse,
 } from "@medusajs/framework/http";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
-import { COMMISSION_MODULE } from "../../../modules/commission";
-import CommissionModuleService from "../../../modules/commission/service";
+
+const PLATFORM_FEE_RATE = 10; // 10% platform fee
 
 // GET /vendors/analytics - Get vendor analytics
 export const GET = async (
@@ -12,13 +12,18 @@ export const GET = async (
   res: MedusaResponse
 ) => {
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
-  const commissionService: CommissionModuleService =
-    req.scope.resolve(COMMISSION_MODULE);
 
-  // Get vendor from auth context
+  // Get vendor from auth context with order details
   const { data: vendorAdmins } = await query.graph({
     entity: "vendor_admin",
-    fields: ["vendor.id", "vendor.orders.*", "vendor.products.*"],
+    fields: [
+      "vendor.id",
+      "vendor.orders.*",
+      "vendor.orders.total",
+      "vendor.orders.tax_total",
+      "vendor.orders.currency_code",
+      "vendor.products.*",
+    ],
     filters: {
       id: req.auth_context.actor_id,
     },
@@ -29,29 +34,25 @@ export const GET = async (
     return res.status(404).json({ message: "Vendor not found" });
   }
 
-  const vendorId = vendorAdmin.vendor.id;
-
-  // Get commissions for this vendor
-  const commissions = await commissionService.listCommissions({
-    vendor_id: vendorId,
-  });
-
-  // Calculate analytics
+  // Calculate analytics from orders
   const orders = vendorAdmin.vendor.orders || [];
   const products = vendorAdmin.vendor.products || [];
 
-  const totalRevenue = commissions.reduce(
-    (sum, c) => sum + Number(c.order_total),
+  // Calculate totals from order data
+  // tax_total includes platform fee calculated by our tax provider
+  const totalRevenue = orders.reduce(
+    (sum: number, order: any) => sum + Number(order.total || 0),
     0
   );
-  const totalCommission = commissions.reduce(
-    (sum, c) => sum + Number(c.commission_amount),
+
+  // Platform fee is included in tax_total from our tax provider
+  const totalPlatformFee = orders.reduce(
+    (sum: number, order: any) => sum + Number(order.tax_total || 0),
     0
   );
-  const totalEarnings = commissions.reduce(
-    (sum, c) => sum + Number(c.vendor_amount),
-    0
-  );
+
+  // Vendor earnings = total revenue - platform fee
+  const totalEarnings = totalRevenue - totalPlatformFee;
 
   // Group by status
   const ordersByStatus = orders.reduce(
@@ -71,10 +72,10 @@ export const GET = async (
       total_orders: orders.length,
       total_products: products.length,
       total_revenue: totalRevenue,
-      total_commission: totalCommission,
+      platform_fee: totalPlatformFee,
       total_earnings: totalEarnings,
-      commission_rate: 10, // Fixed 10%
-      currency_code: "ugx",
+      platform_fee_rate: PLATFORM_FEE_RATE,
+      currency_code: orders[0]?.currency_code || "ugx",
       orders_by_status: ordersByStatus,
     },
     recent_orders: recentOrders,

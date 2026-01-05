@@ -79,15 +79,20 @@ const StripePaymentButton = ({
   const handlePayment = async () => {
     setSubmitting(true)
 
-    if (!stripe || !elements || !card || !cart) {
+    if (
+      !stripe ||
+      !elements ||
+      (!card && !session?.data?.payment_method) ||
+      !cart
+    ) {
       setSubmitting(false)
       return
     }
 
     await stripe
       .confirmCardPayment(session?.data.client_secret as string, {
-        payment_method: {
-          card: card,
+        payment_method: (session?.data.payment_method as string) || {
+          card: card!,
           billing_details: {
             name:
               cart.billing_address?.first_name +

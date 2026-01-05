@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { listProducts } from "@lib/data/products"
+import { listProducts, getProductReviews } from "@lib/data/products"
 import { getRegion, listRegions } from "@lib/data/regions"
 import ProductTemplate from "@modules/products/templates"
 import { HttpTypes } from "@medusajs/types"
@@ -120,12 +120,27 @@ export default async function ProductPage(props: Props) {
     notFound()
   }
 
+  // Fetch product reviews
+  let reviewsData = {
+    reviews: [],
+    count: 0,
+    average_rating: null as number | null,
+  }
+  try {
+    reviewsData = await getProductReviews(pricedProduct.id)
+  } catch (error) {
+    console.error("Failed to fetch product reviews:", error)
+  }
+
   return (
     <ProductTemplate
       product={pricedProduct}
       region={region}
       countryCode={params.countryCode}
       images={images}
+      reviews={reviewsData.reviews}
+      reviewCount={reviewsData.count}
+      averageRating={reviewsData.average_rating}
     />
   )
 }

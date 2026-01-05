@@ -8,6 +8,7 @@ import LocalizedClientLink from "@modules/common/components/localized-client-lin
 import CartButton from "@modules/layout/components/cart-button"
 import SideMenu from "@modules/layout/components/side-menu"
 import ThemeToggle from "@modules/layout/components/theme-toggle"
+import WishlistLink from "@modules/layout/components/wishlist-link"
 
 export default async function Nav() {
   const [regions, locales, currentLocale] = await Promise.all([
@@ -56,6 +57,7 @@ export default async function Nav() {
                 Account
               </LocalizedClientLink>
             </div>
+            <WishlistLink />
             <ThemeToggle />
             <Suspense
               fallback={

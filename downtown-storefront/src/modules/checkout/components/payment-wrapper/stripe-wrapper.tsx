@@ -44,7 +44,11 @@ const StripeWrapper: React.FC<StripeWrapperProps> = ({
 
   return (
     <StripeContext.Provider value={true}>
-      <Elements options={options} stripe={stripePromise}>
+      <Elements
+        options={options}
+        stripe={stripePromise}
+        key={options.clientSecret}
+      >
         {children}
       </Elements>
     </StripeContext.Provider>

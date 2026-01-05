@@ -5,6 +5,7 @@ import ProductActions from "@modules/products/components/product-actions"
 import ProductOnboardingCta from "@modules/products/components/product-onboarding-cta"
 import ProductTabs from "@modules/products/components/product-tabs"
 import RelatedProducts from "@modules/products/components/related-products"
+import ProductReviews from "@modules/products/components/product-reviews"
 import ProductInfo from "@modules/products/templates/product-info"
 import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-related-products"
 import { notFound } from "next/navigation"
@@ -12,11 +13,28 @@ import { HttpTypes } from "@medusajs/types"
 
 import ProductActionsWrapper from "./product-actions-wrapper"
 
+type StoreProductReview = {
+  id: string
+  title: string
+  content: string
+  rating: number
+  first_name: string
+  last_name: string
+  status: "pending" | "approved" | "rejected"
+  product_id: string
+  customer_id: string | null
+  created_at: string
+  updated_at: string
+}
+
 type ProductTemplateProps = {
   product: HttpTypes.StoreProduct
   region: HttpTypes.StoreRegion
   countryCode: string
   images: HttpTypes.StoreProductImage[]
+  reviews?: StoreProductReview[]
+  reviewCount?: number
+  averageRating?: number | null
 }
 
 const ProductTemplate: React.FC<ProductTemplateProps> = ({
@@ -24,6 +42,9 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
   region,
   countryCode,
   images,
+  reviews = [],
+  reviewCount = 0,
+  averageRating = null,
 }) => {
   if (!product || !product.id) {
     return notFound()
@@ -56,6 +77,14 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
             <ProductActionsWrapper id={product.id} region={region} />
           </Suspense>
         </div>
+      </div>
+      <div className="content-container my-8">
+        <ProductReviews
+          productId={product.id}
+          reviews={reviews}
+          averageRating={averageRating}
+          count={reviewCount}
+        />
       </div>
       <div
         className="content-container my-16 small:my-32"

@@ -4,6 +4,7 @@ import { HttpTypes } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import Thumbnail from "../thumbnail"
 import PreviewPrice from "./price"
+import ProductPreviewWishlist from "./wishlist"
 
 export default async function ProductPreview({
   product,
@@ -27,9 +28,15 @@ export default async function ProductPreview({
     product,
   })
 
+  // Get the first variant for wishlist functionality
+  const defaultVariantId = product.variants?.[0]?.id
+
   return (
     <LocalizedClientLink href={`/products/${product.handle}`} className="group">
-      <div data-testid="product-wrapper">
+      <div data-testid="product-wrapper" className="relative">
+        {defaultVariantId && (
+          <ProductPreviewWishlist variantId={defaultVariantId} />
+        )}
         <Thumbnail
           thumbnail={product.thumbnail}
           images={product.images}

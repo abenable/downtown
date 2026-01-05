@@ -134,3 +134,105 @@ export const listProductsWithSort = async ({
     queryParams,
   }
 }
+
+/**
+ * Get reviews for a product
+ */
+export const getProductReviews = async (
+  productId: string,
+  limit: number = 10,
+  offset: number = 0
+): Promise<{
+  reviews: Array<{
+    id: string
+    title: string
+    content: string
+    rating: number
+    first_name: string
+    last_name: string
+    status: string
+    product_id: string
+    customer_id: string | null
+    created_at: string
+    updated_at: string
+  }>
+  count: number
+  average_rating: number | null
+}> => {
+  const next = {
+    ...(await getCacheOptions("reviews")),
+  }
+
+  return sdk.client.fetch<{
+    reviews: Array<{
+      id: string
+      title: string
+      content: string
+      rating: number
+      first_name: string
+      last_name: string
+      status: string
+      product_id: string
+      customer_id: string | null
+      created_at: string
+      updated_at: string
+    }>
+    count: number
+    average_rating: number | null
+  }>(`/store/products/${productId}/reviews`, {
+    method: "GET",
+    query: { limit, offset },
+    next,
+    cache: "no-store",
+  })
+}
+
+/**
+ * Submit a review for a product
+ */
+export const addProductReview = async (data: {
+  product_id: string
+  title: string
+  content: string
+  rating: number
+  first_name: string
+  last_name: string
+}): Promise<{
+  review: {
+    id: string
+    title: string
+    content: string
+    rating: number
+    first_name: string
+    last_name: string
+    status: string
+    product_id: string
+    customer_id: string | null
+    created_at: string
+    updated_at: string
+  }
+}> => {
+  const headers = {
+    ...(await getAuthHeaders()),
+  }
+
+  return sdk.client.fetch<{
+    review: {
+      id: string
+      title: string
+      content: string
+      rating: number
+      first_name: string
+      last_name: string
+      status: string
+      product_id: string
+      customer_id: string | null
+      created_at: string
+      updated_at: string
+    }
+  }>(`/store/reviews`, {
+    method: "POST",
+    body: data,
+    headers,
+  })
+}

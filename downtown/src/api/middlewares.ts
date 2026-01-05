@@ -2,6 +2,7 @@ import {
   defineMiddlewares,
   authenticate,
   validateAndTransformBody,
+  validateAndTransformQuery,
   MedusaNextFunction,
   MedusaRequest,
   MedusaResponse,
@@ -12,6 +13,11 @@ import {
   PostVendorProductSchema,
   PostSupportTicketSchema,
 } from "./vendors/validators";
+import { PostStoreReviewSchema } from "./store/reviews/route";
+import { GetAdminReviewsSchema } from "./admin/reviews/route";
+import { PostAdminUpdateReviewsStatusSchema } from "./admin/reviews/status/route";
+import { GetStoreReviewsSchema } from "./store/products/[id]/reviews/route";
+import { PostStoreCreateWishlistItem } from "./store/customers/me/wishlists/items/validators";
 
 // Configure multer for memory storage
 const upload = multer({
@@ -169,6 +175,89 @@ export default defineMiddlewares({
       middlewares: [
         authenticate(["customer", "vendor"], ["session", "bearer"]),
       ],
+    },
+    // Saved payment methods - customer auth only
+    {
+      matcher: "/store/payment-methods/:account_holder_id",
+      method: "GET",
+      middlewares: [authenticate("customer", ["bearer", "session"])],
+    },
+    // Product reviews - store routes
+    {
+      method: ["POST"],
+      matcher: "/store/reviews",
+      middlewares: [
+        authenticate("customer", ["session", "bearer"]),
+        validateAndTransformBody(PostStoreReviewSchema),
+      ],
+    },
+    {
+      matcher: "/store/products/:id/reviews",
+      method: ["GET"],
+      middlewares: [
+        validateAndTransformQuery(GetStoreReviewsSchema, {
+          isList: true,
+          defaults: [
+            "id",
+            "rating",
+            "title",
+            "first_name",
+            "last_name",
+            "content",
+            "created_at",
+          ],
+        }),
+      ],
+    },
+    // Product reviews - admin routes
+    {
+      matcher: "/admin/reviews",
+      method: ["GET"],
+      middlewares: [
+        validateAndTransformQuery(GetAdminReviewsSchema, {
+          isList: true,
+          defaults: [
+            "id",
+            "title",
+            "content",
+            "rating",
+            "product_id",
+            "customer_id",
+            "status",
+            "created_at",
+            "updated_at",
+            "product.*",
+          ],
+        }),
+      ],
+    },
+    {
+      matcher: "/admin/reviews/status",
+      method: ["POST"],
+      middlewares: [
+        validateAndTransformBody(PostAdminUpdateReviewsStatusSchema),
+      ],
+    },
+    // Wishlist routes - customer auth
+    {
+      matcher: "/store/customers/me/wishlists",
+      middlewares: [authenticate("customer", ["session", "bearer"])],
+    },
+    {
+      matcher: "/store/customers/me/wishlists/items",
+      method: ["POST"],
+      middlewares: [
+        authenticate("customer", ["session", "bearer"]),
+        validateAndTransformBody(PostStoreCreateWishlistItem),
+      ],
+    },
+    {
+      matcher: "/store/customers/me/wishlists/items/*",
+      middlewares: [authenticate("customer", ["session", "bearer"])],
+    },
+    {
+      matcher: "/store/customers/me/wishlists/share",
+      middlewares: [authenticate("customer", ["session", "bearer"])],
     },
   ],
 });

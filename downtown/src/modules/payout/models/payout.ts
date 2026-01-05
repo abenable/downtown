@@ -16,7 +16,7 @@ const Payout = model.define("payout", {
   period_end: model.dateTime(),
   orders_count: model.number().default(0),
   total_sales: model.bigNumber(),
-  total_commission: model.bigNumber(),
+  platform_fee: model.bigNumber(), // Platform fee (tax) amount
   status: model.enum(PayoutStatus).default(PayoutStatus.PENDING),
   processed_at: model.dateTime().nullable(),
   reference: model.text().nullable(), // Payment reference/transaction ID

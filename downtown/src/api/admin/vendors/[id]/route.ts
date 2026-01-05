@@ -1,7 +1,8 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import { MARKETPLACE_MODULE } from "../../../../modules/marketplace";
 import MarketplaceModuleService from "../../../../modules/marketplace/service";
+import { IEventBusModuleService } from "@medusajs/framework/types";
 
 // GET /admin/vendors/:id - Get vendor details
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
@@ -43,6 +44,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
   const { id } = req.params;
   const marketplaceService: MarketplaceModuleService =
     req.scope.resolve(MARKETPLACE_MODULE);
+  const eventBus: IEventBusModuleService = req.scope.resolve(Modules.EVENT_BUS);
 
   const vendor = await marketplaceService.retrieveVendor(id);
 
@@ -59,6 +61,12 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse) => {
     status: "approved",
     approved_at: new Date(),
     rejection_reason: null,
+  });
+
+  // Emit vendor approved event for notifications
+  await eventBus.emit({
+    name: "vendor.approved",
+    data: { id: updatedVendor.id },
   });
 
   res.json({
