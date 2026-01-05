@@ -192,15 +192,12 @@ export const getProductReviews = async (
  */
 export const addProductReview = async (data: {
   product_id: string
-  title: string
   content: string
   rating: number
-  first_name: string
-  last_name: string
 }): Promise<{
   review: {
     id: string
-    title: string
+    title: string | null
     content: string
     rating: number
     first_name: string
@@ -219,7 +216,7 @@ export const addProductReview = async (data: {
   return sdk.client.fetch<{
     review: {
       id: string
-      title: string
+      title: string | null
       content: string
       rating: number
       first_name: string

@@ -10,6 +10,7 @@ import Footer from "@modules/layout/templates/footer"
 import Nav from "@modules/layout/templates/nav"
 import FreeShippingPriceNudge from "@modules/shipping/components/free-shipping-price-nudge"
 import { WishlistProvider } from "@lib/context/wishlist-context"
+import { toSerializable } from "@lib/util/to-serializable"
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseURL()),
@@ -19,6 +20,7 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
   const customer = await retrieveCustomer()
   const cart = await retrieveCart()
   const wishlist = customer ? await getWishlist() : null
+  const safeWishlist = wishlist ? toSerializable(wishlist) : null
   let shippingOptions: StoreCartShippingOption[] = []
 
   if (cart) {
@@ -28,7 +30,7 @@ export default async function PageLayout(props: { children: React.ReactNode }) {
   }
 
   return (
-    <WishlistProvider initialWishlist={wishlist}>
+    <WishlistProvider initialWishlist={safeWishlist}>
       <div className="bg-white dark:bg-gray-900 min-h-screen">
         <Nav />
         {customer && cart && (

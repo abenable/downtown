@@ -46,20 +46,34 @@ export async function getWishlist(): Promise<Wishlist | null> {
 export async function createWishlist(): Promise<Wishlist> {
   const headers = await getAuthHeaders()
 
-  const { wishlist } = await sdk.client.fetch<WishlistResponse>(
-    "/store/customers/me/wishlists",
-    {
-      method: "POST",
-      headers,
+  try {
+    const { wishlist } = await sdk.client.fetch<WishlistResponse>(
+      "/store/customers/me/wishlists",
+      {
+        method: "POST",
+        headers,
+      }
+    )
+
+    const cacheTag = await getCacheTag("wishlist")
+    if (cacheTag) {
+      revalidateTag(cacheTag)
     }
-  )
 
-  const cacheTag = await getCacheTag("wishlist")
-  if (cacheTag) {
-    revalidateTag(cacheTag)
+    return wishlist
+  } catch (error: any) {
+    // If a wishlist already exists (e.g. concurrent create or bad GET), fall back to fetching it.
+    const message = error?.message || ""
+    const status = error?.status || error?.statusCode
+    if (status === 422 || message.includes("already has a wishlist")) {
+      const existing = await getWishlist()
+      if (existing) {
+        return existing
+      }
+    }
+
+    throw error
   }
-
-  return wishlist
 }
 
 /**

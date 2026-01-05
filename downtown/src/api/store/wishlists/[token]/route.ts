@@ -20,7 +20,13 @@ export async function GET(req: MedusaStoreRequest, res: MedusaResponse) {
 
   const { data } = await query.graph({
     entity: "wishlist",
-    fields: ["*", "items.*", "items.product_variant.*"],
+    fields: [
+      "*",
+      "items.*",
+      "items.product_variant.*",
+      "items.product_variant.product.*",
+      "items.product_variant.product.images.*",
+    ],
     filters: {
       id: decodedToken.wishlist_id,
     },

@@ -65,7 +65,6 @@ export function WishlistProvider({
         setWishlist(updatedWishlist)
       } catch (error) {
         console.error("Failed to add item to wishlist:", error)
-        throw error
       }
     })
   }, [])
@@ -77,7 +76,6 @@ export function WishlistProvider({
         setWishlist(updatedWishlist)
       } catch (error) {
         console.error("Failed to remove item from wishlist:", error)
-        throw error
       }
     })
   }, [])

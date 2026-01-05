@@ -15,7 +15,7 @@ import ProductActionsWrapper from "./product-actions-wrapper"
 
 type StoreProductReview = {
   id: string
-  title: string
+  title: string | null
   content: string
   rating: number
   first_name: string
@@ -35,6 +35,7 @@ type ProductTemplateProps = {
   reviews?: StoreProductReview[]
   reviewCount?: number
   averageRating?: number | null
+  isLoggedIn?: boolean
 }
 
 const ProductTemplate: React.FC<ProductTemplateProps> = ({
@@ -45,6 +46,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
   reviews = [],
   reviewCount = 0,
   averageRating = null,
+  isLoggedIn = false,
 }) => {
   if (!product || !product.id) {
     return notFound()
@@ -84,6 +86,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
           reviews={reviews}
           averageRating={averageRating}
           count={reviewCount}
+          isLoggedIn={isLoggedIn}
         />
       </div>
       <div

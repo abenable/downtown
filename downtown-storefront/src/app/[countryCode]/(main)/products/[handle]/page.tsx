@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { listProducts, getProductReviews } from "@lib/data/products"
 import { getRegion, listRegions } from "@lib/data/regions"
+import { retrieveCustomer } from "@lib/data/customer"
 import ProductTemplate from "@modules/products/templates"
 import { HttpTypes } from "@medusajs/types"
 
@@ -132,6 +133,9 @@ export default async function ProductPage(props: Props) {
     console.error("Failed to fetch product reviews:", error)
   }
 
+  // Check if user is logged in
+  const customer = await retrieveCustomer()
+
   return (
     <ProductTemplate
       product={pricedProduct}
@@ -141,6 +145,7 @@ export default async function ProductPage(props: Props) {
       reviews={reviewsData.reviews}
       reviewCount={reviewsData.count}
       averageRating={reviewsData.average_rating}
+      isLoggedIn={!!customer}
     />
   )
 }
