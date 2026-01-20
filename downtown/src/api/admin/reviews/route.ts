@@ -6,6 +6,14 @@ export const GetAdminReviewsSchema = createFindParams();
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const query = req.scope.resolve("query");
 
+  // Build filters from query params
+  const filters: Record<string, unknown> = {};
+  const queryFilters = req.query.filters as Record<string, string> | undefined;
+
+  if (queryFilters?.product_id) {
+    filters.product_id = queryFilters.product_id;
+  }
+
   const {
     data: reviews,
     metadata: { count, take, skip } = {
@@ -15,6 +23,19 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     },
   } = await query.graph({
     entity: "review",
+    fields: [
+      "id",
+      "title",
+      "content",
+      "rating",
+      "first_name",
+      "last_name",
+      "product_id",
+      "customer_id",
+      "created_at",
+      "updated_at",
+    ],
+    filters,
     ...req.queryConfig,
   });
 

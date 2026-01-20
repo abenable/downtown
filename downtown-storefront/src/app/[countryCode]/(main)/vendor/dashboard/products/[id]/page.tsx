@@ -34,13 +34,6 @@ export default async function VendorProductDetailPage({ params }: Props) {
     notFound()
   }
 
-  const getPrice = () => {
-    if (product.variants?.[0]?.prices?.[0]) {
-      return (product.variants[0].prices[0].amount / 100).toString()
-    }
-    return ""
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -121,16 +114,14 @@ export default async function VendorProductDetailPage({ params }: Props) {
                   {product.description}
                 </p>
               )}
-              <div className="text-lg font-medium text-gray-900 dark:text-white">
-                {product.variants?.[0]?.prices?.[0] && (
-                  <>
-                    {product.variants[0].prices[0].currency_code.toUpperCase()}{" "}
-                    {(
-                      product.variants[0].prices[0].amount / 100
-                    ).toLocaleString()}
-                  </>
-                )}
-              </div>
+              {product.variants?.[0]?.prices?.[0] && (
+                <div className="text-lg font-medium text-gray-900 dark:text-white">
+                  {product.variants[0].prices[0].currency_code.toUpperCase()}{" "}
+                  {(
+                    product.variants[0].prices[0].amount / 100
+                  ).toLocaleString()}
+                </div>
+              )}
             </div>
           </div>
 
@@ -141,8 +132,9 @@ export default async function VendorProductDetailPage({ params }: Props) {
               title: product.title,
               description: product.description || "",
               thumbnail: product.thumbnail || "",
-              price: getPrice(),
               status: product.status,
+              variants: product.variants || [],
+              options: product.options || [],
             }}
           />
         </div>

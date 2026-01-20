@@ -10,7 +10,6 @@ export type CreateReviewStepInput = {
   customer_id?: string;
   first_name: string;
   last_name: string;
-  status?: "pending" | "approved" | "rejected";
 };
 
 export const createReviewStep = createStep(

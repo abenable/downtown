@@ -165,10 +165,23 @@ export async function getVendorOrders() {
  */
 export async function createVendorProduct(data: {
   title: string
+  subtitle?: string
   description?: string
   thumbnail?: string
+  material?: string
+  weight?: number
+  length?: number
+  width?: number
+  height?: number
+  options?: Array<{
+    title: string
+    values: string[]
+  }>
   variants: Array<{
     title: string
+    inventory_quantity?: number
+    manage_inventory?: boolean
+    options?: Record<string, string>
     prices: Array<{
       amount: number
       currency_code: string
@@ -353,5 +366,42 @@ export async function deleteVendorProduct(productId: string) {
     return { success: true }
   } catch (error) {
     return { success: false, error: "Something went wrong" }
+  }
+}
+
+export type ProductCategory = {
+  id: string
+  name: string
+  handle: string
+  description?: string
+  parent_category?: {
+    id: string
+    name: string
+  }
+  children?: ProductCategory[]
+}
+
+/**
+ * Get available product categories for vendors
+ */
+export async function getVendorCategories(): Promise<{
+  categories: ProductCategory[]
+  flat_categories: ProductCategory[]
+  count: number
+}> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/vendors/categories`, {
+      method: "GET",
+      cache: "no-store",
+    })
+
+    if (!response.ok) {
+      return { categories: [], flat_categories: [], count: 0 }
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Error fetching categories:", error)
+    return { categories: [], flat_categories: [], count: 0 }
   }
 }

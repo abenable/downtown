@@ -15,7 +15,6 @@ import {
 } from "./vendors/validators";
 import { PostStoreReviewSchema } from "./store/reviews/route";
 import { GetAdminReviewsSchema } from "./admin/reviews/route";
-import { PostAdminUpdateReviewsStatusSchema } from "./admin/reviews/status/route";
 import { GetStoreReviewsSchema } from "./store/products/[id]/reviews/route";
 import { PostStoreCreateWishlistItem } from "./store/customers/me/wishlists/items/validators";
 
@@ -223,19 +222,11 @@ export default defineMiddlewares({
             "rating",
             "product_id",
             "customer_id",
-            "status",
             "created_at",
             "updated_at",
             "product.*",
           ],
         }),
-      ],
-    },
-    {
-      matcher: "/admin/reviews/status",
-      method: ["POST"],
-      middlewares: [
-        validateAndTransformBody(PostAdminUpdateReviewsStatusSchema),
       ],
     },
     // Wishlist routes - customer auth

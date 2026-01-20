@@ -1,8 +1,10 @@
 import { Suspense } from "react"
+import { unstable_noStore as noStore } from "next/cache"
 
 import { listRegions } from "@lib/data/regions"
 import { listLocales } from "@lib/data/locales"
 import { getLocale } from "@lib/data/locale-actions"
+import { getVendorMe } from "@lib/data/vendor"
 import { StoreRegion } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CartButton from "@modules/layout/components/cart-button"
@@ -11,11 +13,17 @@ import ThemeToggle from "@modules/layout/components/theme-toggle"
 import WishlistLink from "@modules/layout/components/wishlist-link"
 
 export default async function Nav() {
-  const [regions, locales, currentLocale] = await Promise.all([
+  // Disable caching for this component to ensure fresh vendor status
+  noStore()
+
+  const [regions, locales, currentLocale, vendorData] = await Promise.all([
     listRegions().then((regions: StoreRegion[]) => regions),
     listLocales(),
     getLocale(),
+    getVendorMe().catch(() => null),
   ])
+
+  const isVendor = vendorData?.is_vendor ?? false
 
   return (
     <div className="sticky top-0 inset-x-0 z-50 group">
@@ -27,6 +35,7 @@ export default async function Nav() {
                 regions={regions}
                 locales={locales}
                 currentLocale={currentLocale}
+                isVendor={isVendor}
               />
             </div>
           </div>

@@ -1,53 +1,140 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { createVendorProduct, uploadVendorFile } from "@lib/data/vendor"
+import {
+  createVendorProduct,
+  uploadVendorFile,
+  ProductCategory,
+} from "@lib/data/vendor"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
+// Option definitions
+const CONDITION_OPTIONS = ["New", "Used", "Refurbished"]
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"]
+const COLOR_OPTIONS = [
+  { name: "Black", hex: "#000000" },
+  { name: "White", hex: "#FFFFFF" },
+  { name: "Red", hex: "#EF4444" },
+  { name: "Blue", hex: "#3B82F6" },
+  { name: "Green", hex: "#22C55E" },
+  { name: "Yellow", hex: "#EAB308" },
+  { name: "Orange", hex: "#F97316" },
+  { name: "Purple", hex: "#A855F7" },
+  { name: "Pink", hex: "#EC4899" },
+  { name: "Gray", hex: "#6B7280" },
+  { name: "Brown", hex: "#78350F" },
+  { name: "Navy", hex: "#1E3A5F" },
+]
 
 type VariantData = {
+  id: string
   title: string
-  sku: string
   price: string
   inventory_quantity: string
   options: Record<string, string>
 }
 
-export default function NewProductForm() {
+type Props = {
+  categories: ProductCategory[]
+}
+
+// Generate variant title from options
+const generateVariantTitle = (options: Record<string, string>) => {
+  return Object.values(options).filter(Boolean).join(" / ") || "Default"
+}
+
+export default function NewProductForm({ categories }: Props) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
-  const [hasVariants, setHasVariants] = useState(false)
+
+  // Option toggles
+  const [hasConditionVariants, setHasConditionVariants] = useState(false)
+  const [hasColorVariants, setHasColorVariants] = useState(false)
+  const [hasSizeVariants, setHasSizeVariants] = useState(false)
+
+  // Selected option values
+  const [selectedConditions, setSelectedConditions] = useState<string[]>([])
+  const [selectedColors, setSelectedColors] = useState<string[]>([])
   const [selectedSizes, setSelectedSizes] = useState<string[]>([])
+
+  // Selected category
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("")
 
   const [formData, setFormData] = useState({
     title: "",
-    subtitle: "",
     description: "",
-    price: "",
     thumbnail: "",
-    sku: "",
     inventory_quantity: "1",
-    material: "",
-    weight: "",
-    length: "",
-    width: "",
-    height: "",
-    condition: "new",
+    price: "",
   })
 
-  // Variants state for size-based products
-  const [variants, setVariants] = useState<VariantData[]>([])
+  // Store custom variant data (prices and inventory per variant)
+  const [variantCustomData, setVariantCustomData] = useState<
+    Record<string, { price: string; inventory_quantity: string }>
+  >({})
+
+  // Generate all variant combinations based on selected options
+  const variants = useMemo(() => {
+    const conditions =
+      hasConditionVariants && selectedConditions.length > 0
+        ? selectedConditions
+        : [""]
+    const colors =
+      hasColorVariants && selectedColors.length > 0 ? selectedColors : [""]
+    const sizes =
+      hasSizeVariants && selectedSizes.length > 0 ? selectedSizes : [""]
+
+    const generatedVariants: VariantData[] = []
+
+    for (const condition of conditions) {
+      for (const color of colors) {
+        for (const size of sizes) {
+          const options: Record<string, string> = {}
+          if (condition) options.Condition = condition
+          if (color) options.Color = color
+          if (size) options.Size = size
+
+          // Only create variants if at least one option is selected
+          if (Object.keys(options).length === 0) continue
+
+          const variantKey = Object.values(options).join("-")
+          const customData = variantCustomData[variantKey]
+
+          generatedVariants.push({
+            id: variantKey,
+            title: generateVariantTitle(options),
+            price: customData?.price || "",
+            inventory_quantity: customData?.inventory_quantity || "1",
+            options,
+          })
+        }
+      }
+    }
+
+    return generatedVariants
+  }, [
+    hasConditionVariants,
+    hasColorVariants,
+    hasSizeVariants,
+    selectedConditions,
+    selectedColors,
+    selectedSizes,
+    variantCustomData,
+  ])
+
+  const hasAnyVariants =
+    (hasConditionVariants && selectedConditions.length > 0) ||
+    (hasColorVariants && selectedColors.length > 0) ||
+    (hasSizeVariants && selectedSizes.length > 0)
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Upload to server via server action
     setUploading(true)
     setError("")
 
@@ -65,7 +152,6 @@ export default function NewProductForm() {
     } catch (err) {
       console.error("Upload error:", err)
       setError("Failed to upload image")
-      setImagePreview(null)
     } finally {
       setUploading(false)
     }
@@ -78,34 +164,32 @@ export default function NewProductForm() {
     }
   }
 
-  const handleSizeToggle = (size: string) => {
-    if (selectedSizes.includes(size)) {
-      setSelectedSizes(selectedSizes.filter((s) => s !== size))
-      setVariants(variants.filter((v) => v.options.Size !== size))
+  const toggleOption = (
+    value: string,
+    selected: string[],
+    setSelected: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    if (selected.includes(value)) {
+      setSelected(selected.filter((v) => v !== value))
     } else {
-      setSelectedSizes([...selectedSizes, size])
-      setVariants([
-        ...variants,
-        {
-          title: size,
-          sku: `${formData.sku || "SKU"}-${size}`,
-          price: formData.price,
-          inventory_quantity: "1",
-          options: { Size: size },
-        },
-      ])
+      setSelected([...selected, value])
     }
   }
 
-  const updateVariant = (
-    index: number,
-    field: keyof VariantData,
+  const updateVariantData = (
+    variantKey: string,
+    field: "price" | "inventory_quantity",
     value: string
   ) => {
-    const updated = [...variants]
-    if (field === "options") return
-    updated[index] = { ...updated[index], [field]: value }
-    setVariants(updated)
+    setVariantCustomData((prev) => ({
+      ...prev,
+      [variantKey]: {
+        ...prev[variantKey],
+        price: prev[variantKey]?.price || "",
+        inventory_quantity: prev[variantKey]?.inventory_quantity || "1",
+        [field]: value,
+      },
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,28 +199,47 @@ export default function NewProductForm() {
 
     try {
       let productVariants: any[] = []
+      let productOptions: { title: string; values: string[] }[] = []
 
-      if (hasVariants && variants.length > 0) {
-        // Multiple size variants
+      if (hasAnyVariants && variants.length > 0) {
+        // Build options array
+        if (hasConditionVariants && selectedConditions.length > 0) {
+          productOptions.push({
+            title: "Condition",
+            values: selectedConditions,
+          })
+        }
+        if (hasColorVariants && selectedColors.length > 0) {
+          productOptions.push({
+            title: "Color",
+            values: selectedColors,
+          })
+        }
+        if (hasSizeVariants && selectedSizes.length > 0) {
+          productOptions.push({
+            title: "Size",
+            values: selectedSizes,
+          })
+        }
+
+        // Build variants array
         productVariants = variants.map((v) => ({
           title: v.title,
-          sku: v.sku || undefined,
           inventory_quantity: parseInt(v.inventory_quantity) || 0,
           manage_inventory: true,
           options: v.options,
           prices: [
             {
-              amount: parseFloat(v.price || formData.price) * 100,
+              amount: parseFloat(v.price || "0") * 100,
               currency_code: "ugx",
             },
           ],
         }))
       } else {
-        // Single variant (no sizes)
+        // Single variant (no options selected)
         productVariants = [
           {
             title: "Default",
-            sku: formData.sku || undefined,
             inventory_quantity: parseInt(formData.inventory_quantity) || 0,
             manage_inventory: true,
             prices: [
@@ -151,28 +254,15 @@ export default function NewProductForm() {
 
       const productData: any = {
         title: formData.title,
-        subtitle: formData.subtitle || undefined,
         description: formData.description || undefined,
         thumbnail: formData.thumbnail || undefined,
-        material: formData.material || undefined,
-        weight: formData.weight ? parseFloat(formData.weight) : undefined,
-        length: formData.length ? parseFloat(formData.length) : undefined,
-        width: formData.width ? parseFloat(formData.width) : undefined,
-        height: formData.height ? parseFloat(formData.height) : undefined,
         variants: productVariants,
-        metadata: {
-          condition: formData.condition,
-        },
+        category_ids: selectedCategoryId ? [selectedCategoryId] : undefined,
       }
 
-      // Add options if we have size variants
-      if (hasVariants && selectedSizes.length > 0) {
-        productData.options = [
-          {
-            title: "Size",
-            values: selectedSizes,
-          },
-        ]
+      // Add options if we have variants
+      if (productOptions.length > 0) {
+        productData.options = productOptions
       }
 
       const result = await createVendorProduct(productData)
@@ -259,21 +349,6 @@ export default function NewProductForm() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Subtitle
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.subtitle}
-                    onChange={(e) =>
-                      setFormData({ ...formData, subtitle: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:bg-gray-700 dark:text-white"
-                    placeholder="Brief tagline for your product"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Description
                   </label>
                   <textarea
@@ -287,21 +362,35 @@ export default function NewProductForm() {
                   />
                 </div>
 
+                {/* Category Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Condition
+                    Category *
                   </label>
                   <select
-                    value={formData.condition}
-                    onChange={(e) =>
-                      setFormData({ ...formData, condition: e.target.value })
-                    }
+                    required
+                    value={selectedCategoryId}
+                    onChange={(e) => setSelectedCategoryId(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:bg-gray-700 dark:text-white"
                   >
-                    <option value="new">New</option>
-                    <option value="used">Used</option>
-                    <option value="refurbished">Refurbished</option>
+                    <option value="">Select a category</option>
+                    {categories.map((category) => (
+                      <optgroup key={category.id} label={category.name}>
+                        {category.children && category.children.length > 0 ? (
+                          category.children.map((child) => (
+                            <option key={child.id} value={child.id}>
+                              {child.name}
+                            </option>
+                          ))
+                        ) : (
+                          <option value={category.id}>{category.name}</option>
+                        )}
+                      </optgroup>
+                    ))}
                   </select>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Choose the category that best fits your product
+                  </p>
                 </div>
               </div>
             </div>
@@ -350,54 +439,32 @@ export default function NewProductForm() {
               </div>
             </div>
 
-            {/* Pricing */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Pricing
-              </h2>
+            {/* Price & Inventory (only for simple products without variants) */}
+            {!hasAnyVariants && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                  Price & Inventory
+                </h2>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Price (UGX) *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  step="100"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
-                  className="w-full max-w-xs px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:bg-gray-700 dark:text-white"
-                  placeholder="50000"
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Price (UGX) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      step="100"
+                      value={formData.price}
+                      onChange={(e) =>
+                        setFormData({ ...formData, price: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:bg-gray-700 dark:text-white"
+                      placeholder="50000"
+                    />
+                  </div>
 
-            {/* Inventory & SKU */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Inventory
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    SKU (Stock Keeping Unit)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.sku}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sku: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:bg-gray-700 dark:text-white"
-                    placeholder="e.g., HOODIE-BLK-001"
-                  />
-                </div>
-
-                {!hasVariants && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Stock Quantity *
@@ -417,220 +484,226 @@ export default function NewProductForm() {
                       placeholder="1"
                     />
                   </div>
-                )}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Size Variants */}
+            {/* Product Variants */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Size Options
-                </h2>
-                <label className="flex items-center gap-2 cursor-pointer">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                Product Variants
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Enable options to create product variants. Each combination will
+                be a separate variant with its own inventory.
+              </p>
+
+              {/* Condition Option */}
+              <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+                <label className="flex items-center gap-2 cursor-pointer mb-3">
                   <input
                     type="checkbox"
-                    checked={hasVariants}
+                    checked={hasConditionVariants}
                     onChange={(e) => {
-                      setHasVariants(e.target.checked)
+                      setHasConditionVariants(e.target.checked)
                       if (!e.target.checked) {
-                        setSelectedSizes([])
-                        setVariants([])
+                        setSelectedConditions([])
                       }
                     }}
                     className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900/10"
                   />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    This product has size variants
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Condition (New / Used / Refurbished)
                   </span>
                 </label>
+
+                {hasConditionVariants && (
+                  <div className="flex flex-wrap gap-2 ml-6">
+                    {CONDITION_OPTIONS.map((condition) => (
+                      <button
+                        key={condition}
+                        type="button"
+                        onClick={() =>
+                          toggleOption(
+                            condition,
+                            selectedConditions,
+                            setSelectedConditions
+                          )
+                        }
+                        className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                          selectedConditions.includes(condition)
+                            ? "bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900"
+                            : "border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400"
+                        }`}
+                      >
+                        {condition}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {hasVariants && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                      Select Available Sizes
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {SIZE_OPTIONS.map((size) => (
-                        <button
-                          key={size}
-                          type="button"
-                          onClick={() => handleSizeToggle(size)}
-                          className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                            selectedSizes.includes(size)
-                              ? "bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900"
-                              : "border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400"
-                          }`}
-                        >
-                          {size}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+              {/* Color Option */}
+              <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+                <label className="flex items-center gap-2 cursor-pointer mb-3">
+                  <input
+                    type="checkbox"
+                    checked={hasColorVariants}
+                    onChange={(e) => {
+                      setHasColorVariants(e.target.checked)
+                      if (!e.target.checked) {
+                        setSelectedColors([])
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900/10"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Color
+                  </span>
+                </label>
 
-                  {variants.length > 0 && (
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                        Variant Details
-                      </label>
-                      <div className="space-y-3">
-                        {variants.map((variant, index) => (
-                          <div
-                            key={variant.options.Size}
-                            className="grid grid-cols-4 gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                          >
-                            <div>
-                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                                Size
-                              </label>
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                {variant.options.Size}
-                              </span>
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                                SKU
-                              </label>
-                              <input
-                                type="text"
-                                value={variant.sku}
-                                onChange={(e) =>
-                                  updateVariant(index, "sku", e.target.value)
-                                }
-                                className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded focus:outline-none dark:bg-gray-600 dark:text-white"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                                Price
-                              </label>
-                              <input
-                                type="number"
-                                value={variant.price}
-                                onChange={(e) =>
-                                  updateVariant(index, "price", e.target.value)
-                                }
-                                className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded focus:outline-none dark:bg-gray-600 dark:text-white"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                                Stock
-                              </label>
-                              <input
-                                type="number"
-                                min="0"
-                                value={variant.inventory_quantity}
-                                onChange={(e) =>
-                                  updateVariant(
-                                    index,
-                                    "inventory_quantity",
-                                    e.target.value
-                                  )
-                                }
-                                className="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded focus:outline-none dark:bg-gray-600 dark:text-white"
-                              />
-                            </div>
-                          </div>
-                        ))}
+                {hasColorVariants && (
+                  <div className="flex flex-wrap gap-2 ml-6">
+                    {COLOR_OPTIONS.map((color) => (
+                      <button
+                        key={color.name}
+                        type="button"
+                        onClick={() =>
+                          toggleOption(
+                            color.name,
+                            selectedColors,
+                            setSelectedColors
+                          )
+                        }
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                          selectedColors.includes(color.name)
+                            ? "bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900"
+                            : "border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400"
+                        }`}
+                      >
+                        <span
+                          className="w-4 h-4 rounded-full border border-gray-300"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        {color.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Size Option */}
+              <div className="pb-4">
+                <label className="flex items-center gap-2 cursor-pointer mb-3">
+                  <input
+                    type="checkbox"
+                    checked={hasSizeVariants}
+                    onChange={(e) => {
+                      setHasSizeVariants(e.target.checked)
+                      if (!e.target.checked) {
+                        setSelectedSizes([])
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900/10"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Size
+                  </span>
+                </label>
+
+                {hasSizeVariants && (
+                  <div className="flex flex-wrap gap-2 ml-6">
+                    {SIZE_OPTIONS.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() =>
+                          toggleOption(size, selectedSizes, setSelectedSizes)
+                        }
+                        className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                          selectedSizes.includes(size)
+                            ? "bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900"
+                            : "border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400"
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Variant Details */}
+            {hasAnyVariants && variants.length > 0 && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  Variant Details
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Set stock quantity and optionally customize prices for each
+                  variant. ({variants.length} variant
+                  {variants.length > 1 ? "s" : ""})
+                </p>
+
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {variants.map((variant) => (
+                    <div
+                      key={variant.id}
+                      className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                    >
+                      <div>
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          Variant
+                        </label>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {variant.title}
+                        </span>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          Price (UGX)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="100"
+                          value={variant.price}
+                          onChange={(e) =>
+                            updateVariantData(
+                              variant.id,
+                              "price",
+                              e.target.value
+                            )
+                          }
+                          placeholder={formData.price || "Use base price"}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded focus:outline-none dark:bg-gray-600 dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          Stock *
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          required
+                          value={variant.inventory_quantity}
+                          onChange={(e) =>
+                            updateVariantData(
+                              variant.id,
+                              "inventory_quantity",
+                              e.target.value
+                            )
+                          }
+                          className="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded focus:outline-none dark:bg-gray-600 dark:text-white"
+                        />
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Additional Details */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Additional Details
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Material
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.material}
-                    onChange={(e) =>
-                      setFormData({ ...formData, material: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:bg-gray-700 dark:text-white"
-                    placeholder="e.g., 100% Cotton"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Weight (grams)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.weight}
-                    onChange={(e) =>
-                      setFormData({ ...formData, weight: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:bg-gray-700 dark:text-white"
-                    placeholder="500"
-                  />
+                  ))}
                 </div>
               </div>
-
-              <div className="grid grid-cols-3 gap-4 mt-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Length (cm)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.length}
-                    onChange={(e) =>
-                      setFormData({ ...formData, length: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:bg-gray-700 dark:text-white"
-                    placeholder="30"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Width (cm)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.width}
-                    onChange={(e) =>
-                      setFormData({ ...formData, width: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:bg-gray-700 dark:text-white"
-                    placeholder="20"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Height (cm)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.height}
-                    onChange={(e) =>
-                      setFormData({ ...formData, height: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 dark:bg-gray-700 dark:text-white"
-                    placeholder="5"
-                  />
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Submit Buttons */}
             <div className="flex gap-4">

@@ -39,10 +39,6 @@ export const PostVendorProductSchema = z.object({
     .array(
       z.object({
         title: z.string(),
-        sku: z.string().optional(),
-        barcode: z.string().optional(),
-        ean: z.string().optional(),
-        upc: z.string().optional(),
         inventory_quantity: z.number().optional(),
         manage_inventory: z.boolean().optional(),
         allow_backorder: z.boolean().optional(),

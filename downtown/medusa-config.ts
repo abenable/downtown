@@ -90,6 +90,18 @@ module.exports = defineConfig({
     {
       resolve: "./src/modules/wishlist",
     },
+    // Fulfillment provider for Downtown shipping
+    {
+      resolve: "@medusajs/medusa/fulfillment",
+      options: {
+        providers: [
+          {
+            resolve: "./src/modules/downtown-fulfillment",
+            id: "downtown-fulfillment",
+          },
+        ],
+      },
+    },
     // Tax provider for platform fees
     {
       resolve: "@medusajs/medusa/tax",

@@ -3,7 +3,7 @@
 import { Popover, PopoverPanel, Transition } from "@headlessui/react"
 import { ArrowRightMini, XMark } from "@medusajs/icons"
 import { Text, clx, useToggleState } from "@medusajs/ui"
-import { Fragment } from "react"
+import { Fragment, useMemo } from "react"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CountrySelect from "../country-select"
@@ -11,23 +11,38 @@ import LanguageSelect from "../language-select"
 import { HttpTypes } from "@medusajs/types"
 import { Locale } from "@lib/data/locales"
 
-const SideMenuItems = {
-  Home: "/",
-  Shop: "/store",
-  Account: "/account",
-  Cart: "/cart",
-  "Become a Vendor": "/vendor",
-}
-
 type SideMenuProps = {
   regions: HttpTypes.StoreRegion[] | null
   locales: Locale[] | null
   currentLocale: string | null
+  isVendor?: boolean
 }
 
-const SideMenu = ({ regions, locales, currentLocale }: SideMenuProps) => {
+const SideMenu = ({
+  regions,
+  locales,
+  currentLocale,
+  isVendor,
+}: SideMenuProps) => {
   const countryToggleState = useToggleState()
   const languageToggleState = useToggleState()
+
+  const menuItems = useMemo(() => {
+    const items: Record<string, string> = {
+      Home: "/",
+      Shop: "/store",
+      Account: "/account",
+      Cart: "/cart",
+    }
+
+    if (isVendor) {
+      items["View My Shop"] = "/vendor/dashboard"
+    } else {
+      items["Become a Vendor"] = "/vendor"
+    }
+
+    return items
+  }, [isVendor])
 
   return (
     <div className="h-full">
@@ -93,7 +108,7 @@ const SideMenu = ({ regions, locales, currentLocale }: SideMenuProps) => {
                         </button>
                       </div>
                       <ul className="flex flex-col gap-1">
-                        {Object.entries(SideMenuItems).map(([name, href]) => {
+                        {Object.entries(menuItems).map(([name, href]) => {
                           return (
                             <li key={name}>
                               <LocalizedClientLink

@@ -69,6 +69,12 @@ export default function VendorRegisterForm({ customer }: Props) {
     })
 
     if (!result.success) {
+      // If already a vendor, redirect to dashboard
+      if (result.error?.includes("already have a vendor account")) {
+        router.push("/vendor/dashboard")
+        router.refresh()
+        return
+      }
       setError(result.error || "Failed to create vendor profile")
       setLoading(false)
       return

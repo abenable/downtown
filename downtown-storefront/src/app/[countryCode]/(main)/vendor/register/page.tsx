@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 import { redirect } from "next/navigation"
+import { unstable_noStore as noStore } from "next/cache"
 import { retrieveCustomer } from "@lib/data/customer"
 import { getVendorMe } from "@lib/data/vendor"
 import VendorRegisterForm from "./form"
@@ -10,6 +11,9 @@ export const metadata: Metadata = {
 }
 
 export default async function VendorRegisterPage() {
+  // Disable caching to ensure fresh vendor status check
+  noStore()
+
   const customer = await retrieveCustomer()
 
   if (!customer) {

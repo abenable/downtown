@@ -7,6 +7,7 @@ import {
   updateProductsWorkflow,
   deleteProductsWorkflow,
 } from "@medusajs/medusa/core-flows";
+import { getVendorFromAuth } from "../../helpers";
 
 // GET /vendors/products/:id - Get a specific product
 export const GET = async (
@@ -15,48 +16,34 @@ export const GET = async (
 ) => {
   const { id } = req.params;
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
+  const { vendorId } = await getVendorFromAuth(req);
 
-  // Get vendor from auth context
-  const { data: vendorAdmins } = await query.graph({
-    entity: "vendor_admin",
-    fields: ["vendor.id"],
-    filters: {
-      id: req.auth_context.actor_id,
-    },
-  });
-
-  const vendorAdmin = vendorAdmins[0];
-  if (!vendorAdmin?.vendor) {
+  if (!vendorId) {
     return res.status(404).json({ message: "Vendor not found" });
   }
 
-  // Get product and verify it belongs to this vendor
-  const { data: products } = await query.graph({
-    entity: "product",
+  // Get vendor's products to verify ownership and get product details
+  const { data: vendors } = await query.graph({
+    entity: "vendor",
     fields: [
-      "*",
-      "variants.*",
-      "variants.prices.*",
-      "images.*",
-      "options.*",
-      "options.values.*",
-      "tags.*",
-      "vendor.*",
+      "products.*",
+      "products.variants.*",
+      "products.variants.prices.*",
+      "products.images.*",
+      "products.options.*",
+      "products.options.values.*",
+      "products.tags.*",
     ],
     filters: {
-      id,
+      id: vendorId,
     },
   });
 
-  const product = products[0];
+  const vendor = vendors[0];
+  const product = vendor?.products?.find((p: any) => p.id === id);
 
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
-  }
-
-  // Verify product belongs to this vendor
-  if (product.vendor?.id !== vendorAdmin.vendor.id) {
-    return res.status(403).json({ message: "Access denied" });
   }
 
   res.json({ product });
@@ -69,18 +56,23 @@ export const PUT = async (
 ) => {
   const { id } = req.params;
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
+  const { vendorId } = await getVendorFromAuth(req);
 
-  // Verify ownership
-  const { data: vendorAdmins } = await query.graph({
-    entity: "vendor_admin",
-    fields: ["vendor.products.id"],
+  if (!vendorId) {
+    return res.status(404).json({ message: "Vendor not found" });
+  }
+
+  // Verify ownership by checking vendor's products
+  const { data: vendors } = await query.graph({
+    entity: "vendor",
+    fields: ["products.id"],
     filters: {
-      id: req.auth_context.actor_id,
+      id: vendorId,
     },
   });
 
-  const vendorAdmin = vendorAdmins[0];
-  const productIds = vendorAdmin?.vendor?.products?.map((p: any) => p.id) || [];
+  const vendor = vendors[0];
+  const productIds = vendor?.products?.map((p: any) => p.id) || [];
 
   if (!productIds.includes(id)) {
     return res.status(403).json({ message: "Access denied" });
@@ -103,18 +95,23 @@ export const DELETE = async (
 ) => {
   const { id } = req.params;
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
+  const { vendorId } = await getVendorFromAuth(req);
 
-  // Verify ownership
-  const { data: vendorAdmins } = await query.graph({
-    entity: "vendor_admin",
-    fields: ["vendor.products.id"],
+  if (!vendorId) {
+    return res.status(404).json({ message: "Vendor not found" });
+  }
+
+  // Verify ownership by checking vendor's products
+  const { data: vendors } = await query.graph({
+    entity: "vendor",
+    fields: ["products.id"],
     filters: {
-      id: req.auth_context.actor_id,
+      id: vendorId,
     },
   });
 
-  const vendorAdmin = vendorAdmins[0];
-  const productIds = vendorAdmin?.vendor?.products?.map((p: any) => p.id) || [];
+  const vendor = vendors[0];
+  const productIds = vendor?.products?.map((p: any) => p.id) || [];
 
   if (!productIds.includes(id)) {
     return res.status(403).json({ message: "Access denied" });

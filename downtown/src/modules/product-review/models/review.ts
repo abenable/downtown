@@ -8,7 +8,6 @@ const Review = model
     rating: model.float(),
     first_name: model.text(),
     last_name: model.text(),
-    status: model.enum(["pending", "approved", "rejected"]).default("pending"),
     product_id: model.text().index("IDX_REVIEW_PRODUCT_ID"),
     customer_id: model.text().nullable(),
   })
