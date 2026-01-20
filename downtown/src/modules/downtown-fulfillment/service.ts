@@ -28,7 +28,7 @@ class DowntownFulfillmentService extends AbstractFulfillmentProviderService {
   async validateFulfillmentData(
     optionData: Record<string, unknown>,
     data: Record<string, unknown>,
-    context: Record<string, unknown>
+    context: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return data;
   }
@@ -45,7 +45,7 @@ class DowntownFulfillmentService extends AbstractFulfillmentProviderService {
   async calculatePrice(
     optionData: CalculateShippingOptionPriceDTO["optionData"],
     data: CalculateShippingOptionPriceDTO["data"],
-    context: CalculateShippingOptionPriceDTO["context"]
+    context: CalculateShippingOptionPriceDTO["context"],
   ): Promise<CalculatedShippingOptionPrice> {
     // Check for door-delivery in various places
     const optionId = (optionData?.id || data?.id || optionData?.code) as string;
@@ -81,7 +81,7 @@ class DowntownFulfillmentService extends AbstractFulfillmentProviderService {
     data: Record<string, unknown>,
     items: Record<string, unknown>[],
     order: Record<string, unknown>,
-    fulfillment: Record<string, unknown>
+    fulfillment: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return {
       data: {
@@ -95,7 +95,7 @@ class DowntownFulfillmentService extends AbstractFulfillmentProviderService {
   }
 
   async createReturnFulfillment(
-    fulfillment: Record<string, unknown>
+    fulfillment: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return {
       data: {},
