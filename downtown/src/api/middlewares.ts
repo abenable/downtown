@@ -8,6 +8,96 @@ import {
   MedusaResponse,
 } from "@medusajs/framework/http";
 import multer from "multer";
+
+// Simple in-memory rate limiter
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+const rateLimit = (
+  maxRequests: number = 100,
+  windowMs: number = 60000 // 1 minute
+) => {
+  return (
+    req: MedusaRequest,
+    res: MedusaResponse,
+    next: MedusaNextFunction
+  ) => {
+    const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
+    const key = `${ip}:${req.path}`;
+    const now = Date.now();
+
+    const record = rateLimitStore.get(key);
+
+    if (!record || now > record.resetTime) {
+      rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
+      return next();
+    }
+
+    if (record.count >= maxRequests) {
+      res.setHeader("Retry-After", String(Math.ceil((record.resetTime - now) / 1000)));
+      res.status(429).json({
+        message: "Too many requests. Please try again later.",
+      });
+      return;
+    }
+
+    record.count++;
+    return next();
+  };
+};
+
+// Input sanitization middleware
+const sanitizeInput = (
+  req: MedusaRequest,
+  res: MedusaResponse,
+  next: MedusaNextFunction
+) => {
+  const sanitizeString = (str: unknown): unknown => {
+    if (typeof str !== "string") return str;
+    // Remove potential XSS vectors
+    return str
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/on\w+\s*=/gi, "")
+      .replace(/javascript:/gi, "")
+      .replace(/data:/gi, "data-blocked:");
+  };
+
+  const sanitizeObject = (obj: unknown): unknown => {
+    if (typeof obj !== "object" || obj === null) return sanitizeString(obj);
+    if (Array.isArray(obj)) return obj.map(sanitizeObject);
+
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      sanitized[key] = sanitizeObject(value);
+    }
+    return sanitized;
+  };
+
+  if (req.body && typeof req.body === "object") {
+    req.body = sanitizeObject(req.body) as Record<string, unknown>;
+  }
+
+  next();
+};
+
+// Admin authorization verification middleware
+const verifyAdminAuth = (
+  req: MedusaRequest,
+  res: MedusaResponse,
+  next: MedusaNextFunction
+) => {
+  // This will be applied after authenticate middleware
+  // to ensure admin routes require proper authentication
+  const authContext = (req as any).auth_context;
+
+  if (!authContext || authContext.actor_type !== "user") {
+    res.status(403).json({
+      message: "Admin authorization required",
+    });
+    return;
+  }
+
+  next();
+};
 import {
   PostVendorCreateSchema,
   PostVendorProductSchema,
@@ -77,6 +167,67 @@ const uploadCors = (
 
 export default defineMiddlewares({
   routes: [
+    // Global rate limiting - apply to all routes
+    {
+      matcher: "/store/*",
+      middlewares: [rateLimit(100, 60000)], // 100 requests per minute
+    },
+    {
+      matcher: "/vendors/*",
+      middlewares: [rateLimit(60, 60000)], // 60 requests per minute for vendor APIs
+    },
+    {
+      matcher: "/admin/*",
+      middlewares: [rateLimit(120, 60000)], // 120 requests per minute for admin
+    },
+    // Global input sanitization for POST/PUT/PATCH
+    {
+      matcher: "/store/*",
+      method: ["POST", "PUT", "PATCH"],
+      middlewares: [sanitizeInput],
+    },
+    {
+      matcher: "/vendors/*",
+      method: ["POST", "PUT", "PATCH"],
+      middlewares: [sanitizeInput],
+    },
+    // Webhook rate limiting (stricter)
+    {
+      matcher: "/webhooks/*",
+      middlewares: [rateLimit(30, 60000)], // 30 requests per minute
+    },
+    // Admin routes - verify admin authorization
+    {
+      matcher: "/admin/vendors/*",
+      middlewares: [authenticate("user", ["session", "bearer"]), verifyAdminAuth],
+    },
+    {
+      matcher: "/admin/payouts/*",
+      middlewares: [authenticate("user", ["session", "bearer"]), verifyAdminAuth],
+    },
+    {
+      matcher: "/admin/refunds/*",
+      middlewares: [authenticate("user", ["session", "bearer"]), verifyAdminAuth],
+    },
+    // New vendor routes
+    {
+      matcher: "/vendors/payment-settings",
+      middlewares: [
+        authenticate(["customer", "vendor"], ["session", "bearer"]),
+      ],
+    },
+    {
+      matcher: "/vendors/payouts/request",
+      method: ["POST"],
+      middlewares: [
+        authenticate(["customer", "vendor"], ["session", "bearer"]),
+      ],
+    },
+    // Store refund routes
+    {
+      matcher: "/store/orders/*/refund",
+      middlewares: [authenticate("customer", ["session", "bearer"])],
+    },
     // File upload route - CORS + auth + multer
     {
       matcher: "/vendors/uploads",

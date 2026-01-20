@@ -38,17 +38,28 @@ module.exports = defineConfig({
         },
       },
     },
-    // Payment provider
+    // Payment providers
     {
       resolve: "@medusajs/medusa/payment",
       options: {
         providers: [
+          // Stripe for card payments (international)
           {
             resolve: "@medusajs/payment-stripe",
             id: "stripe",
             options: {
               apiKey: process.env.STRIPE_API_KEY,
               webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+            },
+          },
+          // Flutterwave for Mobile Money (Uganda - MTN MoMo, Airtel Money)
+          {
+            resolve: "./src/modules/flutterwave-payment",
+            id: "flutterwave",
+            options: {
+              secretKey: process.env.FLUTTERWAVE_SECRET_KEY,
+              publicKey: process.env.FLUTTERWAVE_PUBLIC_KEY,
+              webhookSecret: process.env.FLUTTERWAVE_WEBHOOK_SECRET,
             },
           },
         ],
@@ -89,6 +100,18 @@ module.exports = defineConfig({
     },
     {
       resolve: "./src/modules/wishlist",
+    },
+    // Search module (Meilisearch)
+    {
+      resolve: "./src/modules/search",
+      options: {
+        host: process.env.MEILISEARCH_HOST || "http://localhost:7700",
+        apiKey: process.env.MEILISEARCH_API_KEY,
+      },
+    },
+    // Refund module
+    {
+      resolve: "./src/modules/refund",
     },
     // Fulfillment provider for Downtown shipping
     {
@@ -131,13 +154,25 @@ module.exports = defineConfig({
               channels: ["feed"],
             },
           },
-          // Email provider
+          // Email provider (Resend)
           {
             resolve: "./src/modules/email-notification",
             id: "email",
             options: {
               channels: ["email"],
               from: process.env.EMAIL_FROM || "noreply@campusdowntown.com",
+              resendApiKey: process.env.RESEND_API_KEY,
+            },
+          },
+          // SMS provider (Africa's Talking)
+          {
+            resolve: "./src/modules/sms-notification",
+            id: "sms",
+            options: {
+              channels: ["sms"],
+              apiKey: process.env.AFRICASTALKING_API_KEY,
+              username: process.env.AFRICASTALKING_USERNAME,
+              senderId: process.env.AFRICASTALKING_SENDER_ID || "Downtown",
             },
           },
         ],

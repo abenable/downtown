@@ -1,0 +1,8 @@
+import FlutterwavePaymentProviderService from "./service";
+import { ModuleProvider, Modules } from "@medusajs/framework/utils";
+
+export default ModuleProvider(Modules.PAYMENT, {
+  services: [FlutterwavePaymentProviderService],
+});
+
+export const FLUTTERWAVE_PAYMENT_ID = "flutterwave";

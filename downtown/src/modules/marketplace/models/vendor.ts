@@ -14,6 +14,9 @@ const Vendor = model.define("vendor", {
   status: model.enum(["pending", "approved", "rejected"]).default("pending"),
   rejection_reason: model.text().nullable(),
   approved_at: model.dateTime().nullable(),
+  // Payment settings for Mobile Money payouts
+  payout_phone_number: model.text().nullable(),
+  payout_network: model.enum(["mtn", "airtel"]).nullable(),
   admins: model.hasMany(() => VendorAdmin, {
     mappedBy: "vendor",
   }),
