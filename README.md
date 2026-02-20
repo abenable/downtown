@@ -16,8 +16,7 @@ This repository contains both applications and deployment configuration.
 - Multi-vendor marketplace
 - Uganda region + UGX support
 - Mobile money checkout:
-  - MTN Mobile Money
-  - Airtel Money
+  - iOTEC Pay (single provider for supported mobile money networks)
 - SMS notifications via UG-SMS v2
 - Email notifications via Resend
 - Pickup and delivery support
@@ -31,8 +30,7 @@ Stripe has been removed from runtime flow.
 
 Active payment provider IDs in Medusa:
 
-- `pp_mtn-mobile-money_mtn`
-- `pp_airtel-money_airtel`
+- `pp_iotec-pay_iotec`
 
 ### SMS
 
@@ -61,16 +59,15 @@ Required:
 - `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` (used by storefront calls)
 - `UGSMS_API_KEY`
 
-Mobile money collection:
+iOTEC Pay (mobile money):
 
-- `MTN_MOMO_COLLECTION_URL`
-- `MTN_MOMO_API_KEY`
-- `MTN_MOMO_AUTH_TOKEN`
-- `AIRTEL_MONEY_COLLECTION_URL`
-- `AIRTEL_MONEY_API_KEY`
-- `AIRTEL_MONEY_AUTH_TOKEN`
-- `MOBILE_MONEY_CALLBACK_URL`
-- `MOBILE_MONEY_TIMEOUT_MS`
+- `IOTEC_PAY_API_BASE_URL`
+- `IOTEC_PAY_TOKEN_URL`
+- `IOTEC_PAY_CLIENT_ID`
+- `IOTEC_PAY_CLIENT_SECRET`
+- `IOTEC_PAY_WALLET_ID`
+- `IOTEC_PAY_CALLBACK_URL`
+- `IOTEC_PAY_TIMEOUT_MS`
 
 Mobile money refunds:
 

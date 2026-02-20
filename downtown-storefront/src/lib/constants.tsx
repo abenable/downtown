@@ -8,12 +8,8 @@ export const paymentInfoMap: Record<
   string,
   { title: string; icon: React.JSX.Element }
 > = {
-  "pp_mtn-mobile-money_mtn": {
-    title: "MTN Mobile Money",
-    icon: <MobileMoney />,
-  },
-  "pp_airtel-money_airtel": {
-    title: "Airtel Money",
+  "pp_iotec-pay_iotec": {
+    title: "Mobile Money (iOTEC)",
     icon: <MobileMoney />,
   },
   pp_system_default: {
@@ -24,10 +20,7 @@ export const paymentInfoMap: Record<
 }
 
 export const isMobileMoney = (providerId?: string) => {
-  return (
-    providerId === "pp_mtn-mobile-money_mtn" ||
-    providerId === "pp_airtel-money_airtel"
-  )
+  return providerId === "pp_iotec-pay_iotec"
 }
 export const isManual = (providerId?: string) => {
   return providerId?.startsWith("pp_system_default")

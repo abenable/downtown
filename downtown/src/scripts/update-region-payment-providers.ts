@@ -7,10 +7,7 @@ export default async function updateRegionPaymentProviders({
   const logger = container.resolve("logger");
   const query = container.resolve("query");
 
-  const providers = [
-    "pp_mtn-mobile-money_mtn",
-    "pp_airtel-money_airtel",
-  ];
+  const providers = ["pp_iotec-pay_iotec"];
 
   const { data: regions } = await query.graph({
     entity: "region",

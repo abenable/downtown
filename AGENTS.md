@@ -26,10 +26,9 @@
 ## Payment rules (current)
 - Stripe is removed from active runtime.
 - Checkout payment providers:
-  - `pp_mtn_mtn-mobile-money`
-  - `pp_airtel_airtel-money`
+  - `pp_iotec-pay_iotec`
 - Mobile money provider implementation:
-  - `downtown/src/modules/mobile-money-payment`
+  - `downtown/src/modules/iotec-pay`
 - Frontend payment UX:
   - customer enters Uganda number
   - `Place order` triggers payment authorization flow (mobile money prompt)
