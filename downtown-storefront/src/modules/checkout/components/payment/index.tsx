@@ -1,14 +1,13 @@
 "use client"
 
 import { RadioGroup } from "@headlessui/react"
-import { isStripeLike, paymentInfoMap } from "@lib/constants"
+import { isMobileMoney, paymentInfoMap } from "@lib/constants"
 import { initiatePaymentSession } from "@lib/data/cart"
 import { CheckCircleSolid, CreditCard } from "@medusajs/icons"
 import { Button, Container, Heading, Text, clx } from "@medusajs/ui"
 import ErrorMessage from "@modules/checkout/components/error-message"
-import PaymentContainer, {
-  StripeCardContainer,
-} from "@modules/checkout/components/payment-container"
+import MobileMoneyContainer from "@modules/checkout/components/mobile-money-container"
+import PaymentContainer from "@modules/checkout/components/payment-container"
 import Divider from "@modules/common/components/divider"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
@@ -26,8 +25,11 @@ const Payment = ({
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [cardBrand, setCardBrand] = useState<string | null>(null)
-  const [cardComplete, setCardComplete] = useState(false)
+  const [mobileMoneyComplete, setMobileMoneyComplete] = useState(
+    Boolean(
+      isMobileMoney(activeSession?.provider_id) && activeSession?.data?.phone_number
+    )
+  )
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(
     activeSession?.provider_id ?? ""
   )
@@ -41,12 +43,16 @@ const Payment = ({
   const setPaymentMethod = async (method: string) => {
     setError(null)
     setSelectedPaymentMethod(method)
-    if (isStripeLike(method)) {
+    setMobileMoneyComplete(
+      Boolean(
+        isMobileMoney(method) &&
+          activeSession?.provider_id === method &&
+          activeSession?.data?.phone_number
+      )
+    )
+    if (!isMobileMoney(method)) {
       await initiatePaymentSession(cart, {
         provider_id: method,
-        data: {
-          setup_future_usage: "off_session",
-        },
       })
     }
   }
@@ -76,29 +82,18 @@ const Payment = ({
   const handleSubmit = async () => {
     setIsLoading(true)
     try {
-      const shouldInputCard =
-        isStripeLike(selectedPaymentMethod) && !activeSession
-
       const checkActiveSession =
         activeSession?.provider_id === selectedPaymentMethod
 
       if (!checkActiveSession) {
         await initiatePaymentSession(cart, {
           provider_id: selectedPaymentMethod,
-          data: {
-            setup_future_usage: "off_session",
-          },
         })
       }
 
-      if (!shouldInputCard) {
-        return router.push(
-          pathname + "?" + createQueryString("step", "review"),
-          {
-            scroll: false,
-          }
-        )
-      }
+      return router.push(pathname + "?" + createQueryString("step", "review"), {
+        scroll: false,
+      })
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -148,14 +143,13 @@ const Payment = ({
               >
                 {availablePaymentMethods.map((paymentMethod) => (
                   <div key={paymentMethod.id}>
-                    {isStripeLike(paymentMethod.id) ? (
-                      <StripeCardContainer
+                    {isMobileMoney(paymentMethod.id) ? (
+                      <MobileMoneyContainer
                         paymentProviderId={paymentMethod.id}
                         selectedPaymentOptionId={selectedPaymentMethod}
                         paymentInfoMap={paymentInfoMap}
-                        setCardBrand={setCardBrand}
+                        setMobileMoneyComplete={setMobileMoneyComplete}
                         setError={setError}
-                        setCardComplete={setCardComplete}
                         paymentSession={activeSession}
                         cart={cart}
                       />
@@ -199,14 +193,12 @@ const Payment = ({
             onClick={handleSubmit}
             isLoading={isLoading}
             disabled={
-              (isStripeLike(selectedPaymentMethod) && !cardComplete) ||
+              (isMobileMoney(selectedPaymentMethod) && !mobileMoneyComplete) ||
               (!selectedPaymentMethod && !paidByGiftcard)
             }
             data-testid="submit-payment-button"
           >
-            {!activeSession && isStripeLike(selectedPaymentMethod)
-              ? "Enter card details"
-              : "Continue to review"}
+            Continue to review
           </Button>
         </div>
 
@@ -239,8 +231,10 @@ const Payment = ({
                     )}
                   </Container>
                   <Text>
-                    {isStripeLike(selectedPaymentMethod) && cardBrand
-                      ? cardBrand
+                    {isMobileMoney(selectedPaymentMethod)
+                      ? `Prompt will be sent to ${
+                          activeSession?.data?.phone_number || "selected number"
+                        }`
                       : "Another step will appear"}
                   </Text>
                 </div>

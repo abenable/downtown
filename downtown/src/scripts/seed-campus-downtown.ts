@@ -242,7 +242,10 @@ export default async function seedCampusDowntown({ container }: ExecArgs) {
               name: "Uganda",
               currency_code: "ugx",
               countries: ["ug"],
-              payment_providers: ["pp_stripe_stripe"],
+              payment_providers: [
+                "pp_mtn-mobile-money_mtn",
+                "pp_airtel-money_airtel",
+              ],
             },
           ],
         },

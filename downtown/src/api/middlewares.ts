@@ -167,11 +167,6 @@ const uploadCors = (
 
 export default defineMiddlewares({
   routes: [
-    // Skip authentication for clear-stripe-customers endpoint
-    {
-      matcher: "/store/clear-stripe-customers",
-      middlewares: [],
-    },
     // Global rate limiting - apply to all routes
     {
       matcher: "/store/*",

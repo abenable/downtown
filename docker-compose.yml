@@ -1,0 +1,106 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: downtown-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-downtown}
+      POSTGRES_USER: ${POSTGRES_USER:-downtown}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-downtown}
+    volumes:
+      - downtown_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-downtown} -d ${POSTGRES_DB:-downtown}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: downtown-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - downtown_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./downtown
+      dockerfile: Dockerfile
+    container_name: downtown-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-downtown}:${POSTGRES_PASSWORD:-downtown}@postgres:5432/${POSTGRES_DB:-downtown}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-supersecret}
+      COOKIE_SECRET: ${COOKIE_SECRET:-supersecret}
+      STORE_CORS: ${STORE_CORS:-http://localhost:8000}
+      ADMIN_CORS: ${ADMIN_CORS:-http://localhost:9000}
+      AUTH_CORS: ${AUTH_CORS:-http://localhost:8000,http://localhost:9000}
+      MEDUSA_WORKER_MODE: ${MEDUSA_WORKER_MODE:-server}
+      DISABLE_MEDUSA_ADMIN: ${DISABLE_MEDUSA_ADMIN:-false}
+      MEDUSA_BACKEND_URL: ${MEDUSA_BACKEND_URL:-http://localhost:9000}
+      MTN_MOMO_COLLECTION_URL: ${MTN_MOMO_COLLECTION_URL}
+      MTN_MOMO_API_KEY: ${MTN_MOMO_API_KEY}
+      MTN_MOMO_AUTH_TOKEN: ${MTN_MOMO_AUTH_TOKEN}
+      AIRTEL_MONEY_COLLECTION_URL: ${AIRTEL_MONEY_COLLECTION_URL}
+      AIRTEL_MONEY_API_KEY: ${AIRTEL_MONEY_API_KEY}
+      AIRTEL_MONEY_AUTH_TOKEN: ${AIRTEL_MONEY_AUTH_TOKEN}
+      MOBILE_MONEY_CALLBACK_URL: ${MOBILE_MONEY_CALLBACK_URL}
+      MOBILE_MONEY_TIMEOUT_MS: ${MOBILE_MONEY_TIMEOUT_MS:-20000}
+      MOBILE_MONEY_REFUND_BASE_URL: ${MOBILE_MONEY_REFUND_BASE_URL}
+      MOBILE_MONEY_REFUND_API_KEY: ${MOBILE_MONEY_REFUND_API_KEY}
+      UGSMS_BASE_URL: ${UGSMS_BASE_URL:-https://ugsms.com}
+      UGSMS_API_KEY: ${UGSMS_API_KEY}
+      UGSMS_SENDER_ID: ${UGSMS_SENDER_ID:-Downtown}
+      UGSMS_MESSAGE_TYPE: ${UGSMS_MESSAGE_TYPE:-transactional}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@campusdowntown.com}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL}
+      MEILISEARCH_HOST: ${MEILISEARCH_HOST}
+      MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY}
+    ports:
+      - "9000:9000"
+
+  storefront:
+    build:
+      context: ./downtown-storefront
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${NEXT_PUBLIC_MEDUSA_BACKEND_URL:-http://localhost:9000}
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:8000}
+        NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
+        NEXT_PUBLIC_DEFAULT_REGION: ${NEXT_PUBLIC_DEFAULT_REGION:-ug}
+    container_name: downtown-storefront
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      MEDUSA_BACKEND_URL: ${MEDUSA_BACKEND_URL:-http://backend:9000}
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${NEXT_PUBLIC_MEDUSA_BACKEND_URL:-http://localhost:9000}
+      NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:8000}
+      NEXT_PUBLIC_DEFAULT_REGION: ${NEXT_PUBLIC_DEFAULT_REGION:-ug}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+    ports:
+      - "8000:8000"
+
+volumes:
+  downtown_postgres_data:
+  downtown_redis_data:
