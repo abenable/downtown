@@ -98,10 +98,7 @@ Your site is now running at http://localhost:8000!
 
 # Payment integrations
 
-This storefront is configured for Campus Downtown mobile money checkout:
-
-- MTN Mobile Money
-- Airtel Money
+This storefront is configured for Campus Downtown mobile money checkout via iOTEC Pay.
 
 Provider behavior and credentials are configured in the Medusa backend.
 

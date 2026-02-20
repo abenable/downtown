@@ -27,7 +27,9 @@ const Payment = ({
   const [error, setError] = useState<string | null>(null)
   const [mobileMoneyComplete, setMobileMoneyComplete] = useState(
     Boolean(
-      isMobileMoney(activeSession?.provider_id) && activeSession?.data?.phone_number
+      isMobileMoney(activeSession?.provider_id) &&
+        activeSession?.data?.phone_number &&
+        activeSession?.data?.network
     )
   )
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(
@@ -47,7 +49,8 @@ const Payment = ({
       Boolean(
         isMobileMoney(method) &&
           activeSession?.provider_id === method &&
-          activeSession?.data?.phone_number
+          activeSession?.data?.phone_number &&
+          activeSession?.data?.network
       )
     )
     if (!isMobileMoney(method)) {

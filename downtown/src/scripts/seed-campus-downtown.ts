@@ -243,8 +243,7 @@ export default async function seedCampusDowntown({ container }: ExecArgs) {
               currency_code: "ugx",
               countries: ["ug"],
               payment_providers: [
-                "pp_mtn-mobile-money_mtn",
-                "pp_airtel-money_airtel",
+                "pp_iotec-pay_iotec",
               ],
             },
           ],

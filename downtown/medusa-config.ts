@@ -44,17 +44,15 @@ module.exports = defineConfig({
       options: {
         providers: [
           {
-            resolve: "./src/modules/mtn-mobile-money",
-            id: "mtn",
+            resolve: "./src/modules/iotec-pay",
+            id: "iotec",
             options: {
-              network: "mtn",
-            },
-          },
-          {
-            resolve: "./src/modules/airtel-money",
-            id: "airtel",
-            options: {
-              network: "airtel",
+              apiBaseUrl: process.env.IOTEC_PAY_API_BASE_URL || "https://pay.iotec.io",
+              tokenUrl: process.env.IOTEC_PAY_TOKEN_URL || "https://id.iotec.io/connect/token",
+              walletId: process.env.IOTEC_PAY_WALLET_ID,
+              clientId: process.env.IOTEC_PAY_CLIENT_ID,
+              clientSecret: process.env.IOTEC_PAY_CLIENT_SECRET,
+              callbackUrl: process.env.IOTEC_PAY_CALLBACK_URL,
             },
           },
         ],
