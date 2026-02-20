@@ -1,9 +1,7 @@
 import { createStep } from "@medusajs/framework/workflows-sdk";
-import { InferTypeOf } from "@medusajs/framework/types";
-import { Wishlist } from "../../../modules/wishlist/models/wishlist";
 
 type ValidateWishlistSalesChannelStepInput = {
-  wishlist: InferTypeOf<typeof Wishlist>;
+  wishlist: any;
   sales_channel_id: string;
 };
 

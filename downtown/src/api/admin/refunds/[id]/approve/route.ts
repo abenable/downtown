@@ -7,7 +7,9 @@ import { RefundStatus } from "../../../../../modules/refund/models/refund-reques
 
 // POST /admin/refunds/:id/approve - Approve a refund request
 export const POST = async (
-  req: AuthenticatedMedusaRequest,
+  req: AuthenticatedMedusaRequest<{
+    admin_notes?: string;
+  }>,
   res: MedusaResponse
 ) => {
   const { id } = req.params;

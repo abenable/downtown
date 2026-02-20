@@ -1,12 +1,10 @@
-import { InferTypeOf } from "@medusajs/framework/types";
-import { Wishlist } from "../../../modules/wishlist/models/wishlist";
 import { createStep } from "@medusajs/framework/workflows-sdk";
 import { MedusaError } from "@medusajs/framework/utils";
 
 type ValidateVariantWishlistStepInput = {
   variant_id: string;
   sales_channel_id: string;
-  wishlist: InferTypeOf<typeof Wishlist>;
+  wishlist: any;
 };
 
 export const validateVariantWishlistStep = createStep(
@@ -21,7 +19,7 @@ export const validateVariantWishlistStep = createStep(
   ) => {
     // validate whether variant is in wishlist
     const isInWishlist = wishlist.items?.some(
-      (item) => item.product_variant_id === variant_id
+      (item: any) => item?.product_variant_id === variant_id
     );
 
     if (isInWishlist) {

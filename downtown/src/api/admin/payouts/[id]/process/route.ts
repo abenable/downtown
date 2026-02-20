@@ -21,8 +21,7 @@ export const POST = async (
 
     res.json({
       message: "Payout processed successfully",
-      payout: result.payout,
-      transfer: result.transfer,
+      payout_id: result.payout_id,
     });
   } catch (error: any) {
     res.status(400).json({

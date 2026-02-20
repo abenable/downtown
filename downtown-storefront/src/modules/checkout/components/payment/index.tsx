@@ -1,7 +1,7 @@
 "use client"
 
 import { RadioGroup } from "@headlessui/react"
-import { isStripeLike, isFlutterwave, paymentInfoMap } from "@lib/constants"
+import { isStripeLike, paymentInfoMap } from "@lib/constants"
 import { initiatePaymentSession } from "@lib/data/cart"
 import { CheckCircleSolid, CreditCard } from "@medusajs/icons"
 import { Button, Container, Heading, Text, clx } from "@medusajs/ui"
@@ -9,7 +9,6 @@ import ErrorMessage from "@modules/checkout/components/error-message"
 import PaymentContainer, {
   StripeCardContainer,
 } from "@modules/checkout/components/payment-container"
-import MobileMoneyContainer from "@modules/checkout/components/mobile-money-container"
 import Divider from "@modules/common/components/divider"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
@@ -29,7 +28,6 @@ const Payment = ({
   const [error, setError] = useState<string | null>(null)
   const [cardBrand, setCardBrand] = useState<string | null>(null)
   const [cardComplete, setCardComplete] = useState(false)
-  const [mobileMoneyComplete, setMobileMoneyComplete] = useState(false)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(
     activeSession?.provider_id ?? ""
   )
@@ -161,16 +159,6 @@ const Payment = ({
                         paymentSession={activeSession}
                         cart={cart}
                       />
-                    ) : isFlutterwave(paymentMethod.id) ? (
-                      <MobileMoneyContainer
-                        paymentProviderId={paymentMethod.id}
-                        selectedPaymentOptionId={selectedPaymentMethod}
-                        paymentInfoMap={paymentInfoMap}
-                        paymentSession={activeSession}
-                        cart={cart}
-                        setMobileMoneyComplete={setMobileMoneyComplete}
-                        setError={setError}
-                      />
                     ) : (
                       <PaymentContainer
                         paymentInfoMap={paymentInfoMap}
@@ -212,16 +200,13 @@ const Payment = ({
             isLoading={isLoading}
             disabled={
               (isStripeLike(selectedPaymentMethod) && !cardComplete) ||
-              (isFlutterwave(selectedPaymentMethod) && !mobileMoneyComplete) ||
               (!selectedPaymentMethod && !paidByGiftcard)
             }
             data-testid="submit-payment-button"
           >
             {!activeSession && isStripeLike(selectedPaymentMethod)
               ? "Enter card details"
-              : isFlutterwave(selectedPaymentMethod) && !mobileMoneyComplete
-                ? "Enter mobile money details"
-                : "Continue to review"}
+              : "Continue to review"}
           </Button>
         </div>
 

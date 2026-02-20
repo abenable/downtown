@@ -58,8 +58,12 @@ export const calculateVendorEarningsStep = createStep(
 
     for (const order of eligibleOrders) {
       // Calculate vendor's portion of the order
-      for (const item of order.items || []) {
-        totalSales += Number(item.unit_price) * Number(item.quantity);
+      if (order?.items) {
+        for (const item of order.items) {
+          if (item) {
+            totalSales += Number(item.unit_price || 0) * Number(item.quantity || 0);
+          }
+        }
       }
     }
 

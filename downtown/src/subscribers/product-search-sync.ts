@@ -45,7 +45,7 @@ export default async function productSearchSyncHandler({
         "thumbnail",
         "created_at",
         "updated_at",
-        "variants.prices.*",
+        "variants.*",
         "categories.id",
         "categories.name",
       ],
@@ -83,9 +83,12 @@ export default async function productSearchSyncHandler({
     // Get price (use first variant's first price)
     let price = 0;
     let currencyCode = "ugx";
-    if (product.variants?.[0]?.prices?.[0]) {
-      price = Number(product.variants[0].prices[0].amount || 0);
-      currencyCode = product.variants[0].prices[0].currency_code || "ugx";
+    if (product.variants?.[0]) {
+      const variant = product.variants[0] as any;
+      if (variant.calculated_price) {
+        price = Number(variant.calculated_price.calculated_amount || 0);
+        currencyCode = variant.calculated_price.currency_code || "ugx";
+      }
     }
 
     // Build product document
@@ -101,8 +104,8 @@ export default async function productSearchSyncHandler({
       category_name: product.categories?.[0]?.name || null,
       price,
       currency_code: currencyCode,
-      created_at: product.created_at,
-      updated_at: product.updated_at,
+      created_at: typeof product.created_at === 'string' ? product.created_at : product.created_at.toISOString(),
+      updated_at: typeof product.updated_at === 'string' ? product.updated_at : product.updated_at.toISOString(),
     };
 
     // Index the product

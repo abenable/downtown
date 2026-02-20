@@ -30,7 +30,8 @@ const Payout = model.define("payout", {
   // Mobile Money payout fields
   phone_number: model.text().nullable(), // Recipient phone number
   network: model.enum(MobileNetwork).nullable(), // MTN or Airtel
-  flutterwave_reference: model.text().nullable(), // Flutterwave transfer reference
+  africatalking_reference: model.text().nullable(), // Africa's Talking transfer reference
+  africatalking_transaction_id: model.text().nullable(), // Africa's Talking transaction ID
   failed_reason: model.text().nullable(), // Reason for failure if any
   requested_at: model.dateTime().nullable(), // When vendor requested payout
   approved_at: model.dateTime().nullable(), // When admin approved payout

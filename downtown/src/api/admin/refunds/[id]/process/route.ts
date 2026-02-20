@@ -41,41 +41,57 @@ export const POST = async (
     processed_at: new Date(),
   });
 
-  const secretKey = process.env.FLUTTERWAVE_SECRET_KEY;
+  const secretKey = process.env.AFRICASTALKING_API_KEY;
+  const username = process.env.AFRICASTALKING_USERNAME;
+  const environment = process.env.AFRICASTALKING_ENVIRONMENT || "production";
 
-  if (!secretKey) {
+  if (!secretKey || !username) {
     await refundService.updateRefundRequests({
       id,
       status: RefundStatus.FAILED,
     });
     return res.status(500).json({
-      message: "Flutterwave not configured",
+      message: "Africa's Talking not configured",
     });
   }
 
   try {
     const transferReference = `REFUND_${id}_${Date.now()}`;
 
-    // Process refund via Flutterwave transfer
-    const response = await fetch("https://api.flutterwave.com/v3/transfers", {
+    const baseUrl =
+      environment === "sandbox"
+        ? "https://payments.sandbox.africastalking.com"
+        : "https://payments.africastalking.com";
+
+    // Map network to Africa's Talking provider names
+    const networkProviders: Record<string, string> = {
+      mtn: "Mtn",
+      airtel: "Airtel",
+    };
+
+    // Process refund via Africa's Talking B2C transfer
+    const response = await fetch(`${baseUrl}/mobile/b2c/request`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${secretKey}`,
+        apiKey: secretKey,
         "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({
-        account_bank: "MPS", // Mobile Money
-        account_number: refund.refund_phone_number,
-        amount: Number(refund.amount),
-        narration: `Refund for order ${refund.order_id}`,
-        currency: refund.currency_code.toUpperCase(),
-        reference: transferReference,
-        callback_url: `${process.env.MEDUSA_BACKEND_URL}/webhooks/flutterwave/refunds`,
-        beneficiary_name: "Customer Refund",
-        meta: [
+        username: username,
+        productName: "Downtown",
+        recipients: [
           {
-            mobile_number: refund.refund_phone_number,
-            network: refund.refund_network.toUpperCase(),
+            phoneNumber: refund.refund_phone_number,
+            currencyCode: refund.currency_code.toUpperCase(),
+            amount: Number(refund.amount),
+            providerChannel: networkProviders[refund.refund_network!],
+            reason: "SalaryPayment",
+            metadata: {
+              refund_id: id,
+              order_id: refund.order_id,
+              reference: transferReference,
+            },
           },
         ],
       }),
@@ -83,13 +99,13 @@ export const POST = async (
 
     const result = await response.json();
 
-    if (result.status === "success" && result.data) {
-      // Update refund with Flutterwave reference
+    if (!result.errorMessage && result.numQueued > 0 && result.entries[0].status === "Queued") {
+      // Update refund with Africa's Talking reference
       const updatedRefund = await refundService.updateRefundRequests({
         id,
         status: RefundStatus.COMPLETED,
-        flutterwave_reference: transferReference,
-        flutterwave_refund_id: String(result.data.id),
+        africatalking_reference: transferReference,
+        africatalking_transaction_id: result.entries[0].transactionId,
         completed_at: new Date(),
       });
 
@@ -100,7 +116,7 @@ export const POST = async (
         refund: updatedRefund,
         transfer: {
           reference: transferReference,
-          id: result.data.id,
+          transaction_id: result.entries[0].transactionId,
         },
       });
     } else {
@@ -111,7 +127,7 @@ export const POST = async (
       });
 
       res.status(400).json({
-        message: result.message || "Failed to process refund",
+        message: result.errorMessage || "Failed to process refund",
       });
     }
   } catch (error: any) {

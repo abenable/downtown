@@ -5,7 +5,6 @@ import {
   createStep,
   StepResponse,
 } from "@medusajs/framework/workflows-sdk";
-import { processFlutterwaveTransferStep } from "./steps/process-flutterwave-transfer";
 import { PAYOUT_MODULE } from "../../modules/payout";
 import { PayoutStatus } from "../../modules/payout/models/payout";
 import { MedusaError } from "@medusajs/framework/utils";
@@ -48,56 +47,82 @@ const validatePayoutStep = createStep(
   }
 );
 
-// Step to update payout status
-const updatePayoutStatusStep = createStep(
-  "update-payout-status-step",
+// Step to update payout to processing status
+const setPayoutProcessingStep = createStep(
+  "set-payout-processing-step",
   async (
     input: {
       payout_id: string;
-      status: PayoutStatus;
-      flutterwave_reference?: string;
-      failed_reason?: string;
     },
     { container }
   ) => {
     const payoutService = container.resolve(PAYOUT_MODULE);
 
-    const updateData: Record<string, unknown> = {
-      status: input.status,
-    };
-
-    if (input.status === PayoutStatus.COMPLETED) {
-      updateData.processed_at = new Date();
-      updateData.flutterwave_reference = input.flutterwave_reference;
-    }
-
-    if (input.status === PayoutStatus.FAILED) {
-      updateData.failed_reason = input.failed_reason;
-    }
-
-    const payout = await payoutService.updatePayouts({
+    await payoutService.updatePayouts([{
       id: input.payout_id,
-      ...updateData,
-    });
+      status: PayoutStatus.PROCESSING,
+    }]);
 
-    return new StepResponse(payout);
+    return new StepResponse(input.payout_id, input.payout_id);
   },
   // Compensation - revert to approved status
   async (payoutId, { container }) => {
     if (!payoutId) return;
 
     const payoutService = container.resolve(PAYOUT_MODULE);
-    await payoutService.updatePayouts({
+    await payoutService.updatePayouts([{
       id: payoutId,
       status: PayoutStatus.APPROVED,
-      flutterwave_reference: null,
-      failed_reason: null,
-    });
+    }]);
+  }
+);
+
+// Step to complete payout
+const completePayoutStep = createStep(
+  "complete-payout-step",
+  async (
+    input: {
+      payout_id: string;
+      status: PayoutStatus;
+      failed_reason?: string;
+    },
+    { container }
+  ) => {
+    const payoutService = container.resolve(PAYOUT_MODULE);
+
+    const updateData: any = {
+      id: input.payout_id,
+      status: input.status,
+    };
+
+    if (input.status === PayoutStatus.COMPLETED) {
+      updateData.processed_at = new Date();
+    }
+
+    if (input.status === PayoutStatus.FAILED) {
+      updateData.failed_reason = input.failed_reason;
+    }
+
+    await payoutService.updatePayouts([updateData]);
+
+    return new StepResponse(input.payout_id);
+  },
+  // Compensation - revert to approved status
+  async (payoutId, { container }) => {
+    if (!payoutId) return;
+
+    const payoutService = container.resolve(PAYOUT_MODULE);
+    await payoutService.updatePayouts([{
+      id: payoutId,
+      status: PayoutStatus.APPROVED,
+    }]);
   }
 );
 
 /**
- * Workflow to process an approved payout via Flutterwave
+ * Workflow to process an approved payout
+ * Note: Actual payout transfer (e.g., via Stripe Connect) should be handled separately
+ * This workflow manages the payout status transitions
  */
 export const processPayoutWorkflow = createWorkflow(
   "process-payout-workflow",
@@ -106,37 +131,19 @@ export const processPayoutWorkflow = createWorkflow(
     const payout = validatePayoutStep({ payout_id: input.payout_id });
 
     // Set status to processing
-    updatePayoutStatusStep({
+    setPayoutProcessingStep({
       payout_id: input.payout_id,
-      status: PayoutStatus.PROCESSING,
     });
 
-    // Prepare transfer input
-    const transferInput = transform({ payout }, (data) => ({
-      payout_id: data.payout.id,
-      amount: Number(data.payout.amount),
-      phone_number: data.payout.phone_number,
-      network: data.payout.network,
-      currency_code: data.payout.currency_code,
-      vendor_name: `Vendor ${data.payout.vendor_id}`,
-      narration: `Payout for period ${data.payout.period_start} to ${data.payout.period_end}`,
-    }));
-
-    // Process the transfer via Flutterwave
-    const transferResult = processFlutterwaveTransferStep(transferInput);
-
-    // Update payout with success status
-    const updatedPayout = updatePayoutStatusStep(
-      transform({ input, transferResult }, (data) => ({
-        payout_id: data.input.payout_id,
-        status: PayoutStatus.COMPLETED,
-        flutterwave_reference: data.transferResult.transfer_reference,
-      }))
-    );
+    // Complete the payout
+    // TODO: Integrate with actual payment processor (e.g., Stripe Connect)
+    const updatedPayout = completePayoutStep({
+      payout_id: input.payout_id,
+      status: PayoutStatus.COMPLETED,
+    });
 
     return new WorkflowResponse({
-      payout: updatedPayout,
-      transfer: transferResult,
+      payout_id: input.payout_id,
     });
   }
 );
