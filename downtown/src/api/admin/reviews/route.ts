@@ -23,7 +23,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     },
   } = await query.graph({
     entity: "review",
-    fields: [
+    fields: req.queryConfig?.fields ?? [
       "id",
       "title",
       "content",
@@ -36,7 +36,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
       "updated_at",
     ],
     filters,
-    ...req.queryConfig,
+    pagination: req.queryConfig?.pagination,
   });
 
   res.json({

@@ -4,7 +4,6 @@ import { CreditCard } from "@medusajs/icons"
 import Ideal from "@modules/common/icons/ideal"
 import Bancontact from "@modules/common/icons/bancontact"
 import PayPal from "@modules/common/icons/paypal"
-import MobileMoney from "@modules/common/icons/mobile-money"
 
 /* Map of payment provider_id to their title and icon. Add in any payment providers you want to use. */
 export const paymentInfoMap: Record<
@@ -35,11 +34,6 @@ export const paymentInfoMap: Record<
     title: "Manual Payment",
     icon: <CreditCard />,
   },
-  // Flutterwave Mobile Money (MTN MoMo, Airtel Money)
-  pp_flutterwave_flutterwave: {
-    title: "Mobile Money",
-    icon: <MobileMoney />,
-  },
   // Add more payment providers here
 }
 
@@ -55,9 +49,6 @@ export const isPaypal = (providerId?: string) => {
 }
 export const isManual = (providerId?: string) => {
   return providerId?.startsWith("pp_system_default")
-}
-export const isFlutterwave = (providerId?: string) => {
-  return providerId?.startsWith("pp_flutterwave")
 }
 
 // Add currencies that don't need to be divided by 100

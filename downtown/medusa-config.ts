@@ -43,23 +43,16 @@ module.exports = defineConfig({
       resolve: "@medusajs/medusa/payment",
       options: {
         providers: [
-          // Stripe for card payments (international)
+          // Stripe for card payments
           {
             resolve: "@medusajs/payment-stripe",
             id: "stripe",
             options: {
               apiKey: process.env.STRIPE_API_KEY,
               webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-            },
-          },
-          // Flutterwave for Mobile Money (Uganda - MTN MoMo, Airtel Money)
-          {
-            resolve: "./src/modules/flutterwave-payment",
-            id: "flutterwave",
-            options: {
-              secretKey: process.env.FLUTTERWAVE_SECRET_KEY,
-              publicKey: process.env.FLUTTERWAVE_PUBLIC_KEY,
-              webhookSecret: process.env.FLUTTERWAVE_WEBHOOK_SECRET,
+              // Disable automatic customer creation to avoid stale customer ID issues
+              // Customers will be created on-demand during checkout
+              capture: true,
             },
           },
         ],
@@ -101,6 +94,10 @@ module.exports = defineConfig({
     {
       resolve: "./src/modules/wishlist",
     },
+    // Stripe Connect module for multi-vendor payments
+    {
+      resolve: "./src/modules/stripe-connect",
+    },
     // Search module (Meilisearch)
     {
       resolve: "./src/modules/search",
@@ -112,6 +109,10 @@ module.exports = defineConfig({
     // Refund module
     {
       resolve: "./src/modules/refund",
+    },
+    // Pickup location module
+    {
+      resolve: "./src/modules/pickup-location",
     },
     // Fulfillment provider for Downtown shipping
     {

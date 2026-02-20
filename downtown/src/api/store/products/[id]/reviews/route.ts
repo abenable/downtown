@@ -22,7 +22,6 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     entity: "review",
     filters: {
       product_id: id,
-      status: "approved",
     },
     ...req.queryConfig,
   });

@@ -87,7 +87,7 @@ const emailTemplates: Record<string, (data: Record<string, unknown>) => { subjec
         <p>A payout of <strong>UGX ${data.amount?.toLocaleString() || "0"}</strong> has been sent to your mobile money account.</p>
         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Phone:</strong> ${data.phone_number || "N/A"}</p>
-          <p><strong>Network:</strong> ${data.network?.toUpperCase() || "N/A"}</p>
+          <p><strong>Network:</strong> ${typeof data.network === 'string' ? data.network.toUpperCase() : "N/A"}</p>
           <p><strong>Reference:</strong> ${data.reference || "N/A"}</p>
         </div>
         <p>The funds should arrive in your account shortly.</p>

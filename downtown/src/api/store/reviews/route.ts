@@ -53,7 +53,6 @@ export const POST = async (
       customer_id: customerId,
       first_name: customer.first_name || "Anonymous",
       last_name: customer.last_name || "",
-      status: "approved",
     },
   });
 

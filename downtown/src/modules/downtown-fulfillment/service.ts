@@ -2,8 +2,10 @@ import { AbstractFulfillmentProviderService } from "@medusajs/framework/utils";
 import {
   FulfillmentOption,
   CalculatedShippingOptionPrice,
-  CalculateShippingOptionPriceDTO,
-} from "@medusajs/framework/types";
+  CalculateShippingOptionPriceContext,
+  CreateFulfillmentResult,
+  ValidateFulfillmentDataContext,
+} from "@medusajs/types";
 
 class DowntownFulfillmentService extends AbstractFulfillmentProviderService {
   static identifier = "downtown-fulfillment";
@@ -28,7 +30,7 @@ class DowntownFulfillmentService extends AbstractFulfillmentProviderService {
   async validateFulfillmentData(
     optionData: Record<string, unknown>,
     data: Record<string, unknown>,
-    context: Record<string, unknown>,
+    context: ValidateFulfillmentDataContext,
   ): Promise<Record<string, unknown>> {
     return data;
   }
@@ -37,22 +39,22 @@ class DowntownFulfillmentService extends AbstractFulfillmentProviderService {
     return true;
   }
 
-  async canCalculate(data: Record<string, unknown>): Promise<boolean> {
+  async canCalculate(): Promise<boolean> {
     // Always return true - we handle all calculation logic in calculatePrice
     return true;
   }
 
   async calculatePrice(
-    optionData: CalculateShippingOptionPriceDTO["optionData"],
-    data: CalculateShippingOptionPriceDTO["data"],
-    context: CalculateShippingOptionPriceDTO["context"],
+    optionData: Record<string, unknown>,
+    data: Record<string, unknown>,
+    context: CalculateShippingOptionPriceContext,
   ): Promise<CalculatedShippingOptionPrice> {
     // Check for door-delivery in various places
     const optionId = (optionData?.id || data?.id || optionData?.code) as string;
 
     if (optionId === "door-delivery") {
       // Calculate 5% of cart total
-      const cart = context.cart;
+      const cart = context.cart as any;
       let cartTotal = 0;
 
       if (cart?.items) {
@@ -77,16 +79,10 @@ class DowntownFulfillmentService extends AbstractFulfillmentProviderService {
     };
   }
 
-  async createFulfillment(
-    data: Record<string, unknown>,
-    items: Record<string, unknown>[],
-    order: Record<string, unknown>,
-    fulfillment: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
+  async createFulfillment(): Promise<CreateFulfillmentResult> {
     return {
-      data: {
-        ...data,
-      },
+      data: {},
+      labels: [],
     };
   }
 
@@ -94,11 +90,10 @@ class DowntownFulfillmentService extends AbstractFulfillmentProviderService {
     return;
   }
 
-  async createReturnFulfillment(
-    fulfillment: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
+  async createReturnFulfillment(): Promise<CreateFulfillmentResult> {
     return {
       data: {},
+      labels: [],
     };
   }
 }

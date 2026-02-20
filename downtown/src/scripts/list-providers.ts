@@ -1,8 +1,8 @@
 import {
-  ExecArgs,
   Modules,
   ContainerRegistrationKeys,
 } from "@medusajs/framework/utils";
+import { ExecArgs } from "@medusajs/framework/types";
 
 export default async function listProviders({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER);

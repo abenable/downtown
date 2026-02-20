@@ -8,6 +8,7 @@ import { CheckCircleSolid, Loader } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
 import { Button, clx, Heading, Text } from "@medusajs/ui"
 import ErrorMessage from "@modules/checkout/components/error-message"
+import PickupLocationInfo from "@modules/checkout/components/pickup-location-info"
 import Divider from "@modules/common/components/divider"
 import MedusaRadio from "@modules/common/components/radio"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
@@ -294,6 +295,12 @@ const Shipping: React.FC<ShippingProps> = ({
                     )
                   })}
                 </RadioGroup>
+
+                {/* Show pickup location info for Pickup Station option */}
+                {shippingMethodId &&
+                 _shippingMethods?.find(m => m.id === shippingMethodId)?.name?.toLowerCase().includes('pickup') && (
+                  <PickupLocationInfo />
+                )}
               </div>
             </div>
           </div>

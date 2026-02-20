@@ -1,5 +1,5 @@
-import { ExecArgs } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
+import { ExecArgs } from "@medusajs/framework/types";
 import {
   createShippingOptionsWorkflow,
   createShippingProfilesWorkflow,
@@ -203,7 +203,7 @@ export default async function seedShipping({ container }: ExecArgs) {
     (o: any) => o.name === "Door Delivery"
   );
 
-  const shippingOptionsToCreate = [];
+  const shippingOptionsToCreate: any[] = [];
 
   // Pickup Station - Flat rate 2000 UGX
   if (!hasPickup) {

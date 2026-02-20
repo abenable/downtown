@@ -1,6 +1,6 @@
 "use client"
 
-import { isManual, isStripeLike, isFlutterwave } from "@lib/constants"
+import { isManual, isStripeLike } from "@lib/constants"
 import { placeOrder } from "@lib/data/cart"
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
@@ -30,14 +30,6 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
     case isStripeLike(paymentSession?.provider_id):
       return (
         <StripePaymentButton
-          notReady={notReady}
-          cart={cart}
-          data-testid={dataTestId}
-        />
-      )
-    case isFlutterwave(paymentSession?.provider_id):
-      return (
-        <FlutterwavePaymentButton
           notReady={notReady}
           cart={cart}
           data-testid={dataTestId}
@@ -160,74 +152,6 @@ const StripePaymentButton = ({
         error={errorMessage}
         data-testid="stripe-payment-error-message"
       />
-    </>
-  )
-}
-
-const FlutterwavePaymentButton = ({
-  cart,
-  notReady,
-  "data-testid": dataTestId,
-}: {
-  cart: HttpTypes.StoreCart
-  notReady: boolean
-  "data-testid"?: string
-}) => {
-  const [submitting, setSubmitting] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  const session = cart.payment_collection?.payment_sessions?.find(
-    (s) => s.status === "pending"
-  )
-
-  const onPaymentCompleted = async () => {
-    await placeOrder()
-      .catch((err) => {
-        setErrorMessage(err.message)
-      })
-      .finally(() => {
-        setSubmitting(false)
-      })
-  }
-
-  const handlePayment = async () => {
-    setSubmitting(true)
-    setErrorMessage(null)
-
-    // Verify that phone number and network are set
-    const phoneNumber = session?.data?.phone_number
-    const network = session?.data?.network
-
-    if (!phoneNumber || !network) {
-      setErrorMessage("Please enter your phone number and select your network")
-      setSubmitting(false)
-      return
-    }
-
-    // Place order - the backend will initiate the Mobile Money charge
-    onPaymentCompleted()
-  }
-
-  return (
-    <>
-      <Button
-        disabled={notReady}
-        onClick={handlePayment}
-        size="large"
-        isLoading={submitting}
-        data-testid={dataTestId}
-      >
-        Pay with Mobile Money
-      </Button>
-      <ErrorMessage
-        error={errorMessage}
-        data-testid="flutterwave-payment-error-message"
-      />
-      {submitting && (
-        <p className="text-sm text-ui-fg-subtle mt-2">
-          Check your phone for a USSD prompt to authorize the payment...
-        </p>
-      )}
     </>
   )
 }

@@ -33,9 +33,9 @@ const RefundRequest = model.define("refund_request", {
   // Admin response
   admin_notes: model.text().nullable(),
   rejection_reason: model.text().nullable(),
-  // Flutterwave refund details
-  flutterwave_refund_id: model.text().nullable(),
-  flutterwave_reference: model.text().nullable(),
+  // Africa's Talking refund details
+  africatalking_transaction_id: model.text().nullable(),
+  africatalking_reference: model.text().nullable(),
   // Mobile money refund details
   refund_phone_number: model.text().nullable(),
   refund_network: model.enum(["mtn", "airtel"]).nullable(),
