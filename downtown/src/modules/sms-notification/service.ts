@@ -1,6 +1,4 @@
-import {
-  AbstractNotificationProviderService,
-} from "@medusajs/framework/utils";
+import { AbstractNotificationProviderService } from "@medusajs/framework/utils";
 import {
   Logger,
   ProviderSendNotificationDTO,
@@ -13,50 +11,49 @@ type InjectedDependencies = {
 
 type Options = {
   apiKey?: string;
-  username?: string;
   senderId?: string;
+  messageType?: "transactional" | "promotional";
+  baseUrl?: string;
 };
 
-// SMS templates
 const smsTemplates: Record<string, (data: Record<string, unknown>) => string> = {
   "order-placed": (data) =>
-    `Downtown: Your order #${data.order_id} has been placed! Total: UGX ${data.total?.toLocaleString() || "0"}. Track at ${data.tracking_url || "downtown.ug"}`,
+    `Campus Downtown: Order #${data.order_id} placed. Total UGX ${data.total?.toLocaleString() || "0"}.`,
   "order-shipped": (data) =>
-    `Downtown: Your order #${data.order_id} is on its way! Expected delivery: ${data.delivery_date || "Soon"}`,
+    `Campus Downtown: Order #${data.order_id} is on the way.`,
   "order-delivered": (data) =>
-    `Downtown: Your order #${data.order_id} has been delivered. Thank you for shopping with Downtown!`,
+    `Campus Downtown: Order #${data.order_id} delivered. Thank you for shopping with us.`,
   "vendor-approved": (data) =>
-    `Downtown: Congratulations! Your vendor account "${data.vendor_name}" has been approved. Start selling now!`,
+    `Campus Downtown: Vendor account ${data.vendor_name || ""} approved.`,
   "payout-sent": (data) =>
-    `Downtown: Payout of UGX ${data.amount?.toLocaleString() || "0"} sent to ${data.phone_number}. Ref: ${data.reference || "N/A"}`,
+    `Campus Downtown: Payout of UGX ${data.amount?.toLocaleString() || "0"} sent. Ref ${data.reference || "N/A"}.`,
   "payment-received": (data) =>
-    `Downtown: Payment of UGX ${data.amount?.toLocaleString() || "0"} received for order #${data.order_id}. Thank you!`,
+    `Campus Downtown: Payment of UGX ${data.amount?.toLocaleString() || "0"} received for order #${data.order_id}.`,
 };
 
-/**
- * SMS Notification Provider using Africa's Talking API
- * Great coverage for Uganda and East Africa
- */
 class SmsNotificationProviderService extends AbstractNotificationProviderService {
   static identifier = "sms-notification";
 
   protected logger_: Logger;
-  protected options_: Options;
   protected apiKey_: string | undefined;
-  protected username_: string | undefined;
-  protected senderId_: string | undefined;
+  protected senderId_: string;
+  protected messageType_: "transactional" | "promotional";
+  protected baseUrl_: string;
 
   constructor({ logger }: InjectedDependencies, options: Options) {
     super();
     this.logger_ = logger;
-    this.options_ = options;
-    this.apiKey_ = process.env.AFRICASTALKING_API_KEY || options.apiKey;
-    this.username_ = process.env.AFRICASTALKING_USERNAME || options.username || "sandbox";
-    this.senderId_ = process.env.AFRICASTALKING_SENDER_ID || options.senderId || "Downtown";
+    this.apiKey_ = process.env.UGSMS_API_KEY || options.apiKey;
+    this.senderId_ = process.env.UGSMS_SENDER_ID || options.senderId || "Downtown";
+    this.messageType_ =
+      (process.env.UGSMS_MESSAGE_TYPE as "transactional" | "promotional") ||
+      options.messageType ||
+      "transactional";
+    this.baseUrl_ = process.env.UGSMS_BASE_URL || options.baseUrl || "https://ugsms.com";
   }
 
-  static validateOptions(options: Record<string, unknown>) {
-    // Options are optional - falls back to logging in development
+  static validateOptions(_: Record<string, unknown>) {
+    // Optional. Runtime gracefully falls back to logging if credentials are missing.
   }
 
   async send(
@@ -64,68 +61,80 @@ class SmsNotificationProviderService extends AbstractNotificationProviderService
   ): Promise<ProviderSendNotificationResultsDTO> {
     const { to, template, data } = notification;
 
-    // Get SMS content from template
+    const phoneNumber = this.normalizeUgandanPhone(to);
     const templateFn = smsTemplates[template];
     const message = templateFn
       ? templateFn(data as Record<string, unknown>)
-      : `Downtown: ${JSON.stringify(data)}`;
+      : `Campus Downtown: ${JSON.stringify(data)}`;
 
-    // Format phone number for Africa's Talking (needs country code)
-    let phoneNumber = to.replace(/\s/g, "");
-    if (phoneNumber.startsWith("0")) {
-      phoneNumber = "+256" + phoneNumber.substring(1);
-    }
-    if (!phoneNumber.startsWith("+")) {
-      phoneNumber = "+" + phoneNumber;
+    if (!this.apiKey_) {
+      this.logFallback(phoneNumber, template, message, "UGSMS_API_KEY is not configured");
+      return { id: `sms_${Date.now()}` };
     }
 
-    // If API key is configured, send via Africa's Talking
-    if (this.apiKey_ && this.apiKey_ !== "sandbox") {
-      try {
-        const response = await fetch("https://api.africastalking.com/version1/messaging", {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/x-www-form-urlencoded",
-            apiKey: this.apiKey_,
-          },
-          body: new URLSearchParams({
-            username: this.username_!,
-            to: phoneNumber,
-            message: message,
-            from: this.senderId_!,
-          }),
-        });
+    const response = await fetch(`${this.baseUrl_}/api/v2/sms/send`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-API-Key": this.apiKey_,
+      },
+      body: JSON.stringify({
+        sender_id: this.senderId_,
+        message_body: message,
+        phone_number: phoneNumber,
+        message_type: this.messageType_,
+      }),
+    });
 
-        const result = await response.json();
+    const result = await response.json().catch(() => ({}));
 
-        if (result.SMSMessageData?.Recipients?.[0]?.status === "Success") {
-          this.logger_.info(`SMS sent to ${phoneNumber}: ${template}`);
-          return {
-            id: result.SMSMessageData.Recipients[0].messageId || `sms_${Date.now()}`,
-          };
-        }
-
-        this.logger_.warn(`SMS sending issue: ${JSON.stringify(result)}`);
-      } catch (error: any) {
-        this.logger_.error(`Failed to send SMS: ${error.message}`);
-      }
+    if (!response.ok) {
+      this.logFallback(
+        phoneNumber,
+        template,
+        message,
+        `UG-SMS API error (${response.status}): ${JSON.stringify(result)}`
+      );
+      return { id: `sms_${Date.now()}` };
     }
 
-    // In development or if Africa's Talking fails, log the notification
-    this.logger_.info(`
-================================================================================
-SMS NOTIFICATION
-================================================================================
-To: ${phoneNumber}
-Template: ${template}
-Message: ${message}
-================================================================================
-    `);
+    this.logger_.info(`UG-SMS sent to ${phoneNumber}: ${template}`);
 
     return {
-      id: `sms_${Date.now()}`,
+      id:
+        (result?.data?.message_id as string) ||
+        (result?.message_id as string) ||
+        `ugsms_${Date.now()}`,
     };
+  }
+
+  private normalizeUgandanPhone(input: string): string {
+    const compact = input.replace(/\s+/g, "");
+
+    if (/^2567\d{8}$/.test(compact)) {
+      return compact;
+    }
+
+    if (/^07\d{8}$/.test(compact)) {
+      return `256${compact.slice(1)}`;
+    }
+
+    if (/^\+2567\d{8}$/.test(compact)) {
+      return compact.slice(1);
+    }
+
+    return compact.replace(/^\+/, "");
+  }
+
+  private logFallback(
+    phoneNumber: string,
+    template: string,
+    message: string,
+    reason: string
+  ) {
+    this.logger_.warn(`SMS fallback for ${phoneNumber}: ${reason}`);
+    this.logger_.info(`\n=== SMS NOTIFICATION ===\nTo: ${phoneNumber}\nTemplate: ${template}\nMessage: ${message}\n========================`);
   }
 }
 

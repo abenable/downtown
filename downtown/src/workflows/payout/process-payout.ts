@@ -121,7 +121,7 @@ const completePayoutStep = createStep(
 
 /**
  * Workflow to process an approved payout
- * Note: Actual payout transfer (e.g., via Stripe Connect) should be handled separately
+ * Note: Actual payout transfer via mobile money provider should be handled separately
  * This workflow manages the payout status transitions
  */
 export const processPayoutWorkflow = createWorkflow(
@@ -136,7 +136,7 @@ export const processPayoutWorkflow = createWorkflow(
     });
 
     // Complete the payout
-    // TODO: Integrate with actual payment processor (e.g., Stripe Connect)
+    // TODO: Integrate with the mobile money payout processor
     const updatedPayout = completePayoutStep({
       payout_id: input.payout_id,
       status: PayoutStatus.COMPLETED,

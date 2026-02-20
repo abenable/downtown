@@ -43,16 +43,18 @@ module.exports = defineConfig({
       resolve: "@medusajs/medusa/payment",
       options: {
         providers: [
-          // Stripe for card payments
           {
-            resolve: "@medusajs/payment-stripe",
-            id: "stripe",
+            resolve: "./src/modules/mtn-mobile-money",
+            id: "mtn",
             options: {
-              apiKey: process.env.STRIPE_API_KEY,
-              webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-              // Disable automatic customer creation to avoid stale customer ID issues
-              // Customers will be created on-demand during checkout
-              capture: true,
+              network: "mtn",
+            },
+          },
+          {
+            resolve: "./src/modules/airtel-money",
+            id: "airtel",
+            options: {
+              network: "airtel",
             },
           },
         ],
@@ -93,10 +95,6 @@ module.exports = defineConfig({
     },
     {
       resolve: "./src/modules/wishlist",
-    },
-    // Stripe Connect module for multi-vendor payments
-    {
-      resolve: "./src/modules/stripe-connect",
     },
     // Search module (Meilisearch)
     {
@@ -165,15 +163,15 @@ module.exports = defineConfig({
               resendApiKey: process.env.RESEND_API_KEY,
             },
           },
-          // SMS provider (Africa's Talking)
+          // SMS provider (UG-SMS)
           {
             resolve: "./src/modules/sms-notification",
             id: "sms",
             options: {
               channels: ["sms"],
-              apiKey: process.env.AFRICASTALKING_API_KEY,
-              username: process.env.AFRICASTALKING_USERNAME,
-              senderId: process.env.AFRICASTALKING_SENDER_ID || "Downtown",
+              apiKey: process.env.UGSMS_API_KEY,
+              senderId: process.env.UGSMS_SENDER_ID || "Downtown",
+              messageType: process.env.UGSMS_MESSAGE_TYPE || "transactional",
             },
           },
         ],

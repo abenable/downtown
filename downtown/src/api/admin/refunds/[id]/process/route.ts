@@ -41,71 +41,51 @@ export const POST = async (
     processed_at: new Date(),
   });
 
-  const secretKey = process.env.AFRICASTALKING_API_KEY;
-  const username = process.env.AFRICASTALKING_USERNAME;
-  const environment = process.env.AFRICASTALKING_ENVIRONMENT || "production";
+  const providerBaseUrl = process.env.MOBILE_MONEY_REFUND_BASE_URL;
+  const apiKey = process.env.MOBILE_MONEY_REFUND_API_KEY;
 
-  if (!secretKey || !username) {
+  if (!providerBaseUrl || !apiKey) {
     await refundService.updateRefundRequests({
       id,
       status: RefundStatus.FAILED,
     });
     return res.status(500).json({
-      message: "Africa's Talking not configured",
+      message: "Mobile money refund provider is not configured",
     });
   }
 
   try {
     const transferReference = `REFUND_${id}_${Date.now()}`;
 
-    const baseUrl =
-      environment === "sandbox"
-        ? "https://payments.sandbox.africastalking.com"
-        : "https://payments.africastalking.com";
-
-    // Map network to Africa's Talking provider names
-    const networkProviders: Record<string, string> = {
-      mtn: "Mtn",
-      airtel: "Airtel",
-    };
-
-    // Process refund via Africa's Talking B2C transfer
-    const response = await fetch(`${baseUrl}/mobile/b2c/request`, {
+    const response = await fetch(`${providerBaseUrl}/refunds/mobile-money`, {
       method: "POST",
       headers: {
-        apiKey: secretKey,
+        "X-API-Key": apiKey,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
       body: JSON.stringify({
-        username: username,
-        productName: "Downtown",
-        recipients: [
-          {
-            phoneNumber: refund.refund_phone_number,
-            currencyCode: refund.currency_code.toUpperCase(),
-            amount: Number(refund.amount),
-            providerChannel: networkProviders[refund.refund_network!],
-            reason: "SalaryPayment",
-            metadata: {
-              refund_id: id,
-              order_id: refund.order_id,
-              reference: transferReference,
-            },
-          },
-        ],
+        network: refund.refund_network,
+        phone_number: refund.refund_phone_number,
+        currency_code: refund.currency_code.toUpperCase(),
+        amount: Number(refund.amount),
+        reference: transferReference,
+        reason: "customer_refund",
+        metadata: {
+          refund_id: id,
+          order_id: refund.order_id,
+        },
       }),
     });
 
     const result = await response.json();
 
-    if (!result.errorMessage && result.numQueued > 0 && result.entries[0].status === "Queued") {
-      // Update refund with Africa's Talking reference
+    if (response.ok && (result.status === "queued" || result.status === "success")) {
       const updatedRefund = await refundService.updateRefundRequests({
         id,
         status: RefundStatus.COMPLETED,
         africatalking_reference: transferReference,
-        africatalking_transaction_id: result.entries[0].transactionId,
+        africatalking_transaction_id: result.transaction_id || result.id,
         completed_at: new Date(),
       });
 
@@ -116,7 +96,7 @@ export const POST = async (
         refund: updatedRefund,
         transfer: {
           reference: transferReference,
-          transaction_id: result.entries[0].transactionId,
+          transaction_id: result.transaction_id || result.id,
         },
       });
     } else {
@@ -127,7 +107,7 @@ export const POST = async (
       });
 
       res.status(400).json({
-        message: result.errorMessage || "Failed to process refund",
+        message: result.error || result.message || "Failed to process refund",
       });
     }
   } catch (error: any) {

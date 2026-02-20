@@ -33,7 +33,7 @@ const RefundRequest = model.define("refund_request", {
   // Admin response
   admin_notes: model.text().nullable(),
   rejection_reason: model.text().nullable(),
-  // Africa's Talking refund details
+  // Legacy field names retained for compatibility with existing migrations/data
   africatalking_transaction_id: model.text().nullable(),
   africatalking_reference: model.text().nullable(),
   // Mobile money refund details
