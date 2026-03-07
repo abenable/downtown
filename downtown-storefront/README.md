@@ -1,117 +1,80 @@
-<p align="center">
-  <a href="https://www.medusajs.com">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/59018053/229103275-b5e482bb-4601-46e6-8142-244f531cebdb.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    <img alt="Medusa logo" src="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    </picture>
-  </a>
-</p>
+# Campus Downtown Storefront
 
-<h1 align="center">
-  Medusa Next.js Starter Template
-</h1>
+This is the Next.js storefront for Campus Downtown.
 
-<p align="center">
-Combine Medusa's modules for your commerce backend with the newest Next.js 15 features for a performant storefront.</p>
+## Storefront responsibilities
 
-<p align="center">
-  <a href="https://github.com/medusajs/medusa/blob/master/CONTRIBUTING.md">
-    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat" alt="PRs welcome!" />
-  </a>
-  <a href="https://discord.gg/xpCwq3Kfn8">
-    <img src="https://img.shields.io/badge/chat-on%20discord-7289DA.svg" alt="Discord Chat" />
-  </a>
-  <a href="https://twitter.com/intent/follow?screen_name=medusajs">
-    <img src="https://img.shields.io/twitter/follow/medusajs.svg?label=Follow%20@medusajs" alt="Follow @medusajs" />
-  </a>
-</p>
+- home, collection, category, product, cart, and checkout flows
+- customer account and order views
+- vendor registration, vendor dashboard, and vendor settings
+- mobile money payment selection and phone capture
+- wishlist and review UI
 
-### Prerequisites
+## Tech stack
 
-To use the [Next.js Starter Template](https://medusajs.com/nextjs-commerce/), you should have a Medusa server running locally on port 9000.
-For a quick setup, run:
+- Next.js App Router
+- Tailwind CSS
+- Medusa Store SDK
+- server actions for cart, vendor, and customer flows
 
-```shell
-npx create-medusa-app@latest
+## Payment UX
+
+The storefront is configured for Campus Downtown mobile money checkout through iOTEC Pay.
+
+Current payment provider mapping:
+
+- `pp_iotec-pay_iotec`
+
+Expected checkout behavior:
+
+- customer selects mobile money
+- customer chooses MTN or Airtel
+- customer enters a Uganda mobile number
+- `Place order` triggers the payment prompt
+
+Important constraint:
+
+- keep all customer-facing phone capture Uganda-first using `2567XXXXXXXX`
+
+## Vendor UX
+
+Current vendor-facing surfaces include:
+
+- `/vendor/register`
+- `/vendor/dashboard`
+- `/vendor/dashboard/settings`
+- vendor product and order management screens
+
+The settings page now supports:
+
+- vendor store identity updates
+- vendor admin phone updates
+- payout phone and network configuration
+
+## Development
+
+```bash
+npm install
+npm run dev
 ```
 
-Check out [create-medusa-app docs](https://docs.medusajs.com/learn/installation) for more details and troubleshooting.
+Default local URL:
 
-# Overview
+- `http://localhost:8000`
 
-The Medusa Next.js Starter is built with:
+The backend must be available during real data-driven flows, typically at `http://localhost:9000`.
 
-- [Next.js](https://nextjs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Typescript](https://www.typescriptlang.org/)
-- [Medusa](https://medusajs.com/)
+## Build
 
-Features include:
-
-- Full ecommerce support:
-  - Product Detail Page
-  - Product Overview Page
-  - Product Collections
-  - Cart
-  - Checkout with MTN/Airtel mobile money
-  - User Accounts
-  - Order Details
-- Full Next.js 15 support:
-  - App Router
-  - Next fetching/caching
-  - Server Components
-  - Server Actions
-  - Streaming
-  - Static Pre-Rendering
-
-# Quickstart
-
-### Setting up the environment variables
-
-Navigate into your projects directory and get your environment variables ready:
-
-```shell
-cd nextjs-starter-medusa/
-mv .env.template .env.local
+```bash
+npm run build
 ```
 
-### Install dependencies
+Note: build-time page data collection can fail if the Medusa backend is unavailable.
 
-Use Yarn to install all dependencies.
+## Implementation guardrails
 
-```shell
-yarn
-```
-
-### Start developing
-
-You are now ready to start up your project.
-
-```shell
-yarn dev
-```
-
-### Open the code and start customizing
-
-Your site is now running at http://localhost:8000!
-
-# Payment integrations
-
-This storefront is configured for Campus Downtown mobile money checkout via iOTEC Pay.
-
-Provider behavior and credentials are configured in the Medusa backend.
-
-# Resources
-
-## Learn more about Medusa
-
-- [Website](https://www.medusajs.com/)
-- [GitHub](https://github.com/medusajs)
-- [Documentation](https://docs.medusajs.com/)
-
-## Learn more about Next.js
-
-- [Website](https://nextjs.org/)
-- [GitHub](https://github.com/vercel/next.js)
-- [Documentation](https://nextjs.org/docs)
+- do not add Stripe checkout UI unless explicitly requested
+- keep payment provider IDs aligned with backend config and seed data
+- preserve Uganda-first payment language and phone validation
+- prefer improving existing storefront patterns instead of introducing disconnected payment UX

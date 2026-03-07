@@ -1,108 +1,64 @@
 # Campus Downtown
 
-Campus Downtown is a multi-vendor marketplace for university students in Kampala, built with **Medusa v2** (backend) and **Next.js** (storefront).
+Campus Downtown is a Uganda-first university marketplace for Kampala. The repo contains a Medusa v2 backend, a Next.js storefront, and a root Docker Compose file for full-stack deployment.
 
-This repository contains both applications and deployment configuration.
+## Repo layout
 
-## Repository Structure
+- `downtown/`: Medusa backend, marketplace modules, custom APIs, workflows, subscribers, scripts.
+- `downtown-storefront/`: Next.js storefront, checkout, account area, vendor registration, vendor dashboard.
+- `docker-compose.yml`: root compose file for Redis, backend, and storefront.
+- `AGENTS.md`: implementation guardrails and project-specific agent guidance.
 
-- `downtown/` - Medusa backend (API, admin, custom modules, workflows)
-- `downtown-storefront/` - Next.js storefront
-- `docker-compose.yml` - root full-stack deployment (Postgres, Redis, backend, storefront)
-- `AGENTS.md` - contributor and agent implementation guidance
+## Current product shape
 
-## Core Features
+- Multi-vendor marketplace with vendor registration and vendor dashboard.
+- Uganda-first phone flows using `2567XXXXXXXX`.
+- Mobile money checkout via iOTEC Pay.
+- SMS notifications via UG-SMS v2.
+- Email notifications via Resend.
+- Pickup locations, reviews, wishlists, payouts, refunds, and support workflows.
 
-- Multi-vendor marketplace
-- Uganda region + UGX support
-- Mobile money checkout:
-  - iOTEC Pay (single provider for supported mobile money networks)
-- SMS notifications via UG-SMS v2
-- Email notifications via Resend
-- Pickup and delivery support
-- Product reviews, wishlist, vendor dashboards, payouts/refunds modules
+## Payments
 
-## Current Payment & SMS Integrations
+Stripe is not part of the active runtime.
 
-### Payments
-
-Stripe has been removed from runtime flow.
-
-Active payment provider IDs in Medusa:
+Current checkout payment provider:
 
 - `pp_iotec-pay_iotec`
 
-### SMS
+Relevant payment code:
 
-SMS provider is UG-SMS v2.
+- Backend provider: `downtown/src/modules/iotec-pay`
+- Backend config: `downtown/medusa-config.ts`
+- Storefront payment mapping: `downtown-storefront/src/lib/constants.tsx`
 
-Backend variables:
+Checkout flow:
 
-- `UGSMS_BASE_URL` (default: `https://ugsms.com`)
-- `UGSMS_API_KEY`
-- `UGSMS_SENDER_ID`
-- `UGSMS_MESSAGE_TYPE` (`transactional` or `promotional`)
+- Customer selects mobile money.
+- Customer enters a Uganda phone number and network.
+- `Place order` triggers the iOTEC authorization prompt.
+- Storefront surfaces provider prompt state, but final success confirmation should still be treated as the authoritative payment event.
 
-## Environment Variables
+## Vendor setup
 
-## Backend (`downtown/.env`)
+Vendor setup now includes:
 
-Required:
+- customer-to-vendor registration flow
+- vendor status handling: `pending`, `approved`, `rejected`
+- vendor settings page for store identity
+- payout phone and network setup for mobile money payouts
 
-- `DATABASE_URL`
-- `REDIS_URL`
-- `JWT_SECRET`
-- `COOKIE_SECRET`
-- `STORE_CORS`
-- `ADMIN_CORS`
-- `AUTH_CORS`
-- `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` (used by storefront calls)
-- `UGSMS_API_KEY`
+Relevant files:
 
-iOTEC Pay (mobile money):
+- Registration API: `downtown/src/api/vendors/route.ts`
+- Vendor self-service API: `downtown/src/api/vendors/me/route.ts`
+- Payout settings API: `downtown/src/api/vendors/payment-settings/route.ts`
+- Storefront vendor register page: `downtown-storefront/src/app/[countryCode]/(main)/vendor/register`
+- Storefront vendor settings page: `downtown-storefront/src/app/[countryCode]/(main)/vendor/dashboard/settings`
 
-- `IOTEC_PAY_API_BASE_URL`
-- `IOTEC_PAY_TOKEN_URL`
-- `IOTEC_PAY_CLIENT_ID`
-- `IOTEC_PAY_CLIENT_SECRET`
-- `IOTEC_PAY_WALLET_ID`
-- `IOTEC_PAY_CALLBACK_URL`
-- `IOTEC_PAY_TIMEOUT_MS`
+## Development
 
-Mobile money refunds:
-
-- `MOBILE_MONEY_REFUND_BASE_URL`
-- `MOBILE_MONEY_REFUND_API_KEY`
-
-Optional but common:
-
-- `RESEND_API_KEY`
-- `EMAIL_FROM`
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `S3_ENDPOINT`
-- `S3_BUCKET_NAME`
-- `S3_PUBLIC_URL`
-- `MEILISEARCH_HOST`
-- `MEILISEARCH_API_KEY`
-
-## Storefront (`downtown-storefront/.env.local`)
-
-Required:
-
-- `MEDUSA_BACKEND_URL`
-- `NEXT_PUBLIC_MEDUSA_BACKEND_URL`
-- `NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY`
-- `NEXT_PUBLIC_BASE_URL`
-- `NEXT_PUBLIC_DEFAULT_REGION` (use `ug`)
-
-Optional:
-
-- `REVALIDATE_SECRET`
-
-## Local Development
-
-## 1. Backend
+### Backend
 
 ```bash
 cd downtown
@@ -112,7 +68,7 @@ npm run dev
 
 Backend runs on `http://localhost:9000`.
 
-## 2. Storefront
+### Storefront
 
 ```bash
 cd downtown-storefront
@@ -122,115 +78,46 @@ npm run dev
 
 Storefront runs on `http://localhost:8000`.
 
-## 3. Seed / region provider setup
-
-Seed project data:
+### Build checks
 
 ```bash
 cd downtown
-npx medusa exec ./src/scripts/seed-campus-downtown.ts
+npm run build
+
+cd ../downtown-storefront
+npm run build
 ```
 
-If region providers need correction:
+Note: storefront build-time data fetching expects the backend to be reachable.
 
-```bash
-cd downtown
-npx medusa exec ./src/scripts/update-region-payment-providers.ts
-npx medusa exec ./src/scripts/check-region-payment-providers.ts
-```
+## Docker
 
-## Docker Deployment (General)
-
-From repo root:
+The root `docker-compose.yml` is the preferred deployment entrypoint.
 
 ```bash
 docker compose build
 docker compose up -d
 ```
 
-Exposed services:
+Ports:
 
-- Storefront: `:8000`
-- Backend: `:9000`
+- Backend: `9000`
+- Storefront: `8000`
 
-The backend container runs migrations on startup.
+Important: the compose file no longer defines application environment variables. Runtime configuration must come from the image, platform-level environment injection, or another external configuration mechanism.
+Important: the compose file also assumes an external Postgres database. It does not create a database container.
 
-## Coolify Deployment (Recommended for you)
+## Operational checks
 
-Use this repo as a **Docker Compose** deployment.
+- Verify MTN checkout.
+- Verify Airtel checkout.
+- Verify vendor registration and status flow.
+- Verify vendor payout settings save correctly.
+- Verify UG-SMS send path in a non-dev environment.
 
-## 1. Create resource
+## Guardrails
 
-- In Coolify, create a new resource using your Git repo
-- Deployment type: **Docker Compose**
-- Compose path: `docker-compose.yml` (repo root)
-
-## 2. Configure domains
-
-- Attach your storefront domain to service `storefront`
-- Attach your API/admin domain to service `backend`
-
-## 3. Configure environment variables in Coolify
-
-Set all variables used by root compose, especially:
-
-- Security: `JWT_SECRET`, `COOKIE_SECRET`
-- CORS: `STORE_CORS`, `ADMIN_CORS`, `AUTH_CORS`
-- Medusa publishable key for storefront
-- All UG-SMS vars
-- All mobile money vars
-- Postgres/Redis vars
-
-Use public URLs for:
-
-- `NEXT_PUBLIC_BASE_URL`
-- `NEXT_PUBLIC_MEDUSA_BACKEND_URL`
-- `MEDUSA_BACKEND_URL`
-
-## 4. Deploy
-
-- Trigger deploy
-- Verify health: `https://<api-domain>/health`
-- Verify checkout shows MTN + Airtel
-- Verify SMS send path in logs
-
-## Operations Checklist
-
-Before production release:
-
-- Confirm Uganda region uses only mobile money providers
-- Confirm CORS is restricted to production domains
-- Confirm secrets are only stored in Coolify (not committed)
-- Confirm DB backups are configured
-- Confirm Redis persistence is enabled
-
-After deployment:
-
-- Place a test order with MTN
-- Place a test order with Airtel
-- Verify prompt trigger behavior
-- Verify order notifications (email + SMS)
-
-## Troubleshooting
-
-### Checkout shows wrong providers
-
-Run:
-
-```bash
-cd downtown
-npx medusa exec ./src/scripts/list-payment-providers.ts
-npx medusa exec ./src/scripts/check-region-payment-providers.ts
-```
-
-### Region update fails with provider not found
-
-Use provider IDs returned by `list-payment-providers.ts` and update script/constants accordingly.
-
-### Storefront build fails during static generation
-
-If backend is unavailable, Next static data fetch can fail. Ensure backend URL is reachable during build or use deployment runtime where backend is online.
-
-## Security Note
-
-Rotate exposed credentials immediately if any real keys were committed previously, especially payment, SMS, storage, and email provider keys.
+- Keep all customer and payout phone flows Uganda-first.
+- Do not reintroduce Stripe unless explicitly requested.
+- Prefer Medusa modules and workflows over ad hoc route logic.
+- Keep payment provider IDs aligned across backend config, seed scripts, and storefront constants.

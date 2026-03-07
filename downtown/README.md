@@ -1,62 +1,89 @@
-<p align="center">
-  <a href="https://www.medusajs.com">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/59018053/229103275-b5e482bb-4601-46e6-8142-244f531cebdb.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    <img alt="Medusa logo" src="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    </picture>
-  </a>
-</p>
-<h1 align="center">
-  Medusa
-</h1>
+# Campus Downtown Backend
 
-<h4 align="center">
-  <a href="https://docs.medusajs.com">Documentation</a> |
-  <a href="https://www.medusajs.com">Website</a>
-</h4>
+This is the Medusa v2 backend for Campus Downtown, a Kampala-focused university marketplace.
 
-<p align="center">
-  Building blocks for digital commerce
-</p>
-<p align="center">
-  <a href="https://github.com/medusajs/medusa/blob/master/CONTRIBUTING.md">
-    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat" alt="PRs welcome!" />
-  </a>
-    <a href="https://www.producthunt.com/posts/medusa"><img src="https://img.shields.io/badge/Product%20Hunt-%231%20Product%20of%20the%20Day-%23DA552E" alt="Product Hunt"></a>
-  <a href="https://discord.gg/xpCwq3Kfn8">
-    <img src="https://img.shields.io/badge/chat-on%20discord-7289DA.svg" alt="Discord Chat" />
-  </a>
-  <a href="https://twitter.com/intent/follow?screen_name=medusajs">
-    <img src="https://img.shields.io/twitter/follow/medusajs.svg?label=Follow%20@medusajs" alt="Follow @medusajs" />
-  </a>
-</p>
+## Backend responsibilities
 
-## Compatibility
+- marketplace vendor model and vendor admin relationships
+- vendor registration and vendor self-service APIs
+- iOTEC mobile money payment provider
+- payout, refund, support, wishlist, review, and pickup-location modules
+- email and SMS notifications
+- vendor product and vendor order APIs
 
-This starter is compatible with versions >= 2 of `@medusajs/medusa`. 
+## Key modules
 
-## Getting Started
+- `src/modules/marketplace`
+- `src/modules/payout`
+- `src/modules/refund`
+- `src/modules/support`
+- `src/modules/pickup-location`
+- `src/modules/product-review`
+- `src/modules/iotec-pay`
+- `src/modules/email-notification`
+- `src/modules/sms-notification`
 
-Visit the [Quickstart Guide](https://docs.medusajs.com/learn/installation) to set up a server.
+## Payment implementation
 
-Visit the [Docs](https://docs.medusajs.com/learn/installation#get-started) to learn more about our system requirements.
+Configured in `medusa-config.ts`.
 
-## What is Medusa
+Active provider:
 
-Medusa is a set of commerce modules and tools that allow you to build rich, reliable, and performant commerce applications without reinventing core commerce logic. The modules can be customized and used to build advanced ecommerce stores, marketplaces, or any product that needs foundational commerce primitives. All modules are open-source and freely available on npm.
+- `pp_iotec-pay_iotec`
 
-Learn more about [Medusa’s architecture](https://docs.medusajs.com/learn/introduction/architecture) and [commerce modules](https://docs.medusajs.com/learn/fundamentals/modules/commerce-modules) in the Docs.
+iOTEC implementation:
 
-## Community & Contributions
+- token flow against `https://id.iotec.io/connect/token`
+- collections initiation for mobile money
+- provider status mapping and external ID reconciliation
 
-The community and core team are available in [GitHub Discussions](https://github.com/medusajs/medusa/discussions), where you can ask for support, discuss roadmap, and share ideas.
+Important constraint:
 
-Join our [Discord server](https://discord.com/invite/medusajs) to meet other community members.
+- Uganda mobile numbers must remain normalized to `2567XXXXXXXX`.
 
-## Other channels
+## Vendor APIs
 
-- [GitHub Issues](https://github.com/medusajs/medusa/issues)
-- [Twitter](https://twitter.com/medusajs)
-- [LinkedIn](https://www.linkedin.com/company/medusajs)
-- [Medusa Blog](https://medusajs.com/blog/)
+- `POST /vendors` creates a vendor profile from an authenticated customer.
+- `GET /vendors/me` returns current vendor info.
+- `PUT /vendors/me` updates vendor identity and vendor admin phone details.
+- `GET /vendors/payment-settings` returns payout settings.
+- `POST /vendors/payment-settings` updates payout phone and network.
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+Backend default local URL:
+
+- `http://localhost:9000`
+
+## Build
+
+```bash
+npm run build
+```
+
+## Scripts
+
+Useful scripts live under `src/scripts`, including:
+
+- payment provider listing and verification
+- region payment provider correction
+- seed scripts for Campus Downtown setup
+- shipping and pickup location support scripts
+
+## Current integration notes
+
+- Stripe is not active in runtime.
+- UG-SMS v2 is the SMS provider.
+- Some payout/refund compatibility fields still use legacy `africatalking_*` names and should be treated as migration-sensitive.
+
+## Implementation guardrails
+
+- keep phone-number handling Uganda-first
+- keep provider IDs aligned with the storefront
+- prefer module/workflow changes over route-only business logic
+- if renaming compatibility fields, include safe migrations and API updates in the same change
