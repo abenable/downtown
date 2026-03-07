@@ -1,22 +1,6 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: downtown-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-downtown}
-      POSTGRES_USER: ${POSTGRES_USER:-downtown}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-downtown}
-    volumes:
-      - downtown_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-downtown} -d ${POSTGRES_DB:-downtown}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: downtown-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
@@ -35,44 +19,8 @@ services:
     container_name: downtown-backend
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-downtown}:${POSTGRES_PASSWORD:-downtown}@postgres:5432/${POSTGRES_DB:-downtown}
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-supersecret}
-      COOKIE_SECRET: ${COOKIE_SECRET:-supersecret}
-      STORE_CORS: ${STORE_CORS:-http://localhost:8000}
-      ADMIN_CORS: ${ADMIN_CORS:-http://localhost:9000}
-      AUTH_CORS: ${AUTH_CORS:-http://localhost:8000,http://localhost:9000}
-      MEDUSA_WORKER_MODE: ${MEDUSA_WORKER_MODE:-server}
-      DISABLE_MEDUSA_ADMIN: ${DISABLE_MEDUSA_ADMIN:-false}
-      MEDUSA_BACKEND_URL: ${MEDUSA_BACKEND_URL:-http://localhost:9000}
-      IOTEC_PAY_API_BASE_URL: ${IOTEC_PAY_API_BASE_URL:-https://pay.iotec.io}
-      IOTEC_PAY_TOKEN_URL: ${IOTEC_PAY_TOKEN_URL:-https://id.iotec.io/connect/token}
-      IOTEC_PAY_CLIENT_ID: ${IOTEC_PAY_CLIENT_ID}
-      IOTEC_PAY_CLIENT_SECRET: ${IOTEC_PAY_CLIENT_SECRET}
-      IOTEC_PAY_WALLET_ID: ${IOTEC_PAY_WALLET_ID}
-      IOTEC_PAY_CALLBACK_URL: ${IOTEC_PAY_CALLBACK_URL}
-      IOTEC_PAY_TIMEOUT_MS: ${IOTEC_PAY_TIMEOUT_MS:-20000}
-      MOBILE_MONEY_REFUND_BASE_URL: ${MOBILE_MONEY_REFUND_BASE_URL}
-      MOBILE_MONEY_REFUND_API_KEY: ${MOBILE_MONEY_REFUND_API_KEY}
-      UGSMS_BASE_URL: ${UGSMS_BASE_URL:-https://ugsms.com}
-      UGSMS_API_KEY: ${UGSMS_API_KEY}
-      UGSMS_SENDER_ID: ${UGSMS_SENDER_ID:-Downtown}
-      UGSMS_MESSAGE_TYPE: ${UGSMS_MESSAGE_TYPE:-transactional}
-      EMAIL_FROM: ${EMAIL_FROM:-noreply@campusdowntown.com}
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      S3_ENDPOINT: ${S3_ENDPOINT}
-      S3_BUCKET_NAME: ${S3_BUCKET_NAME}
-      S3_PUBLIC_URL: ${S3_PUBLIC_URL}
-      MEILISEARCH_HOST: ${MEILISEARCH_HOST}
-      MEILISEARCH_API_KEY: ${MEILISEARCH_API_KEY}
     ports:
       - "9000:9000"
 
@@ -80,26 +28,12 @@ services:
     build:
       context: ./downtown-storefront
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${NEXT_PUBLIC_MEDUSA_BACKEND_URL:-http://localhost:9000}
-        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:8000}
-        NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
-        NEXT_PUBLIC_DEFAULT_REGION: ${NEXT_PUBLIC_DEFAULT_REGION:-ug}
     container_name: downtown-storefront
     restart: unless-stopped
     depends_on:
       - backend
-    environment:
-      NODE_ENV: production
-      MEDUSA_BACKEND_URL: ${MEDUSA_BACKEND_URL:-http://backend:9000}
-      NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${NEXT_PUBLIC_MEDUSA_BACKEND_URL:-http://localhost:9000}
-      NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY: ${NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY}
-      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:8000}
-      NEXT_PUBLIC_DEFAULT_REGION: ${NEXT_PUBLIC_DEFAULT_REGION:-ug}
-      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
     ports:
       - "8000:8000"
 
 volumes:
-  downtown_postgres_data:
   downtown_redis_data:
