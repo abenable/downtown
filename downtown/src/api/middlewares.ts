@@ -102,6 +102,7 @@ import {
   PostVendorCreateSchema,
   PostVendorProductSchema,
   PostSupportTicketSchema,
+  UpdateVendorMeSchema,
 } from "./vendors/validators";
 import { PostStoreReviewSchema } from "./store/reviews/route";
 import { GetAdminReviewsSchema } from "./admin/reviews/route";
@@ -254,6 +255,14 @@ export default defineMiddlewares({
       ],
     },
     // All other vendor routes - accept both customer and vendor auth
+    {
+      matcher: "/vendors/me",
+      method: ["PUT"],
+      middlewares: [
+        authenticate(["customer", "vendor"], ["session", "bearer"]),
+        validateAndTransformBody(UpdateVendorMeSchema),
+      ],
+    },
     {
       matcher: "/vendors/me",
       middlewares: [

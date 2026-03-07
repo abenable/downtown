@@ -1,7 +1,7 @@
 import { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { retrieveCustomer } from "@lib/data/customer"
-import { getVendorMe } from "@lib/data/vendor"
+import { getVendorMe, getVendorPaymentSettings } from "@lib/data/vendor"
 import VendorSettingsForm from "./form"
 
 export const metadata: Metadata = {
@@ -22,5 +22,13 @@ export default async function VendorSettingsPage() {
     redirect("/vendor/register")
   }
 
-  return <VendorSettingsForm vendorData={vendorData} customer={customer} />
+  const paymentSettings = await getVendorPaymentSettings()
+
+  return (
+    <VendorSettingsForm
+      vendorData={vendorData}
+      customer={customer}
+      paymentSettings={paymentSettings}
+    />
+  )
 }

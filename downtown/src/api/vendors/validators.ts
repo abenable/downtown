@@ -19,6 +19,24 @@ export const PostVendorCreateSchema = z.object({
 
 export type PostVendorCreateType = z.infer<typeof PostVendorCreateSchema>;
 
+export const UpdateVendorMeSchema = z.object({
+  vendor: z.object({
+    name: z.string().trim().min(2).max(100),
+    description: z.string().trim().max(500).optional().nullable(),
+    phone: z.string().max(20).optional().nullable(),
+    email: z.string().trim().email().optional().nullable(),
+  }),
+  admin: z
+    .object({
+      first_name: z.string().trim().max(100).optional().nullable(),
+      last_name: z.string().trim().max(100).optional().nullable(),
+      phone: z.string().max(20).optional().nullable(),
+    })
+    .optional(),
+});
+
+export type UpdateVendorMeType = z.infer<typeof UpdateVendorMeSchema>;
+
 export const PostVendorProductSchema = z.object({
   title: z.string().min(1),
   subtitle: z.string().optional(),

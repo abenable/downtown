@@ -49,6 +49,16 @@ type IotecPayOptions = {
 };
 
 type MobileNetwork = "mtn" | "airtel";
+type IotecCollectionStatus =
+  | "Pending"
+  | "SentToVendor"
+  | "Success"
+  | "Failed"
+  | "AwaitingApproval"
+  | "RolledBack"
+  | "Scheduled"
+  | "Cancelled"
+  | "Rejected";
 
 class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
   static identifier = "iotec-pay";
@@ -78,6 +88,11 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
 
   async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
     const existingData = (input.data || {}) as Record<string, unknown>;
+    const reference = (existingData.reference as string) || `CD-${Date.now()}`;
+    const externalId =
+      (existingData.external_id as string) ||
+      (existingData.externalId as string) ||
+      reference;
     const phone = this.normalizePhoneNumber(existingData.phone_number as string | undefined);
     const network = this.normalizeNetwork(existingData.network as string | undefined);
 
@@ -87,8 +102,9 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
       currency_code: String(input.currency_code || "UGX").toUpperCase(),
       phone_number: phone,
       network,
-      reference: (existingData.reference as string) || `CD-${Date.now()}`,
-      external_id: (existingData.external_id as string) || (existingData.reference as string) || `CD-${Date.now()}`,
+      reference,
+      external_id: externalId,
+      provider_status: (existingData.provider_status as string) || "Pending",
     };
 
     return {
@@ -99,12 +115,48 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
   }
 
   async getPaymentStatus(input: GetPaymentStatusInput): Promise<GetPaymentStatusOutput> {
-    const status = input.data?.status as PaymentSessionStatus | undefined;
-    return { status: status || PaymentSessionStatus.PENDING };
+    const data = (input.data || {}) as Record<string, unknown>;
+    const providerStatus = data.provider_status as IotecCollectionStatus | undefined;
+    return { status: this.mapPaymentSessionStatus(providerStatus) };
   }
 
   async retrievePayment(input: RetrievePaymentInput): Promise<RetrievePaymentOutput> {
-    return { data: { ...(input.data || {}) } };
+    const data = { ...((input.data || {}) as Record<string, unknown>) };
+    const externalId =
+      (data.external_id as string) || (data.externalId as string) || undefined;
+
+    if (externalId) {
+      try {
+        const latest = await this.fetchCollectionByExternalId(externalId);
+
+        if (latest) {
+          const providerStatus = String(
+            latest.status || latest.state || data.provider_status || "Pending"
+          ) as IotecCollectionStatus;
+
+          return {
+            data: {
+              ...data,
+              provider_status: providerStatus,
+              provider_reference:
+                (latest.id as string) ||
+                (latest.requestId as string) ||
+                (latest.externalId as string) ||
+                data.provider_reference,
+              provider_response: latest,
+              status: this.mapPaymentSessionStatus(providerStatus),
+              last_status_check_at: new Date().toISOString(),
+            },
+          };
+        }
+      } catch (error: any) {
+        this.logger_.warn(
+          `[iotec-pay] Failed to refresh collection status for ${externalId}: ${error.message}`
+        );
+      }
+    }
+
+    return { data };
   }
 
   async authorizePayment(input: AuthorizePaymentInput): Promise<AuthorizePaymentOutput> {
@@ -148,22 +200,25 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
         network: this.normalizeNetwork(data.network as string | undefined),
       });
 
-      const providerStatus = String(providerResponse.status || "Pending");
-      const isFailed = providerStatus.toLowerCase() === "failed";
+      const providerStatus = String(
+        providerResponse.status || providerResponse.state || "Pending"
+      ) as IotecCollectionStatus;
+      const paymentStatus = this.mapPaymentSessionStatus(providerStatus);
 
       return {
-        status: isFailed
-          ? PaymentSessionStatus.ERROR
-          : PaymentSessionStatus.AUTHORIZED,
+        status: paymentStatus,
         data: {
           ...data,
-          status: isFailed
-            ? PaymentSessionStatus.ERROR
-            : PaymentSessionStatus.AUTHORIZED,
+          status: paymentStatus,
           phone_number: phone,
           provider_status: providerStatus,
-          provider_reference: providerResponse.id || providerResponse.externalId,
+          provider_reference:
+            providerResponse.id ||
+            providerResponse.requestId ||
+            providerResponse.externalId,
           provider_response: providerResponse,
+          external_id: externalId,
+          payment_authorization_state: paymentStatus,
           prompt_sent_at: new Date().toISOString(),
         },
       };
@@ -182,6 +237,7 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
 
   async updatePayment(input: UpdatePaymentInput): Promise<UpdatePaymentOutput> {
     const data = (input.data || {}) as Record<string, unknown>;
+    const reference = (data.reference as string) || `CD-${Date.now()}`;
 
     return {
       data: {
@@ -190,6 +246,11 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
         currency_code: String(input.currency_code || "UGX").toUpperCase(),
         phone_number: this.normalizePhoneNumber(data.phone_number as string | undefined),
         network: this.normalizeNetwork(data.network as string | undefined),
+        reference,
+        external_id:
+          (data.external_id as string) ||
+          (data.externalId as string) ||
+          reference,
       },
       status: PaymentSessionStatus.PENDING,
     };
@@ -277,6 +338,24 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
     }
 
     return null;
+  }
+
+  private mapPaymentSessionStatus(status?: string | null) {
+    switch (status?.toLowerCase()) {
+      case "success":
+        return PaymentSessionStatus.AUTHORIZED;
+      case "failed":
+      case "rolledback":
+      case "cancelled":
+      case "rejected":
+        return PaymentSessionStatus.ERROR;
+      case "pending":
+      case "senttovendor":
+      case "awaitingapproval":
+      case "scheduled":
+      default:
+        return PaymentSessionStatus.PENDING;
+    }
   }
 
   private getConfig() {
@@ -393,6 +472,52 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
       if (!response.ok) {
         throw new Error(
           `iOTEC collection failed (${response.status}): ${JSON.stringify(result)}`
+        );
+      }
+
+      return result as Record<string, unknown>;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  private async fetchCollectionByExternalId(
+    externalId: string
+  ): Promise<Record<string, unknown> | null> {
+    const config = this.getConfig();
+
+    if (!config.walletId) {
+      return null;
+    }
+
+    const token = await this.getAccessToken();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), config.timeoutMs);
+
+    try {
+      const response = await fetch(
+        `${config.apiBaseUrl}/api/collections/external-id/${encodeURIComponent(
+          externalId
+        )}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+        }
+      );
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          `iOTEC collection lookup failed (${response.status}): ${JSON.stringify(result)}`
         );
       }
 
