@@ -19,12 +19,12 @@ const Review = ({ cart }: { cart: any }) => {
     (cart.payment_collection || paidByGiftcard)
 
   return (
-    <div className="bg-white">
-      <div className="flex flex-row items-center justify-between mb-6">
+    <div className="rounded-[28px] border border-stone-200 bg-white/90 p-6 shadow-[0_20px_60px_rgba(57,45,24,0.08)] backdrop-blur">
+      <div className="mb-6 flex flex-row items-center justify-between">
         <Heading
           level="h2"
           className={clx(
-            "flex flex-row text-3xl-regular gap-x-2 items-baseline",
+            "flex flex-row items-baseline gap-x-2 font-serif text-3xl text-stone-900",
             {
               "opacity-50 pointer-events-none select-none": !isOpen,
             }
@@ -35,13 +35,12 @@ const Review = ({ cart }: { cart: any }) => {
       </div>
       {isOpen && previousStepsCompleted && (
         <>
-          <div className="flex items-start gap-x-1 w-full mb-6">
+          <div className="mb-6 flex w-full items-start gap-x-1">
             <div className="w-full">
-              <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                By clicking the Place Order button, you confirm that you have
-                read, understand and accept our Terms of Use, Terms of Sale and
-                Returns Policy and acknowledge that you have read Medusa
-                Store&apos;s Privacy Policy.
+              <Text className="rounded-[24px] border border-stone-200 bg-[linear-gradient(135deg,#f6f1e7_0%,#fbfaf7_100%)] px-5 py-4 text-sm leading-6 text-stone-700">
+                By placing this order, you confirm your delivery details and accept the
+                store terms. For mobile money, your phone may show a prompt immediately
+                after submission.
               </Text>
             </div>
           </div>

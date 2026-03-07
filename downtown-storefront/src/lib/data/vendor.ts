@@ -13,6 +13,7 @@ export interface VendorData {
     first_name: string
     last_name: string
     email: string
+    phone?: string | null
     customer_id?: string
   }
   vendor: {
@@ -20,10 +21,19 @@ export interface VendorData {
     name: string
     handle: string
     description: string
+    phone?: string | null
+    email?: string | null
+    payout_phone_number?: string | null
+    payout_network?: "mtn" | "airtel" | null
     status: VendorStatus
     rejection_reason?: string | null
   }
   is_vendor: boolean
+}
+
+export type VendorPaymentSettings = {
+  payout_phone_number: string | null
+  payout_network: "mtn" | "airtel" | null
 }
 
 /**
@@ -102,6 +112,124 @@ export async function createVendor(data: {
     return { success: true, vendor: result.vendor }
   } catch (error) {
     console.error("Error creating vendor:", error)
+    return { success: false, error: "Something went wrong" }
+  }
+}
+
+export async function updateVendorProfile(data: {
+  vendor: {
+    name: string
+    description?: string | null
+    phone?: string | null
+    email?: string | null
+  }
+  admin?: {
+    first_name?: string | null
+    last_name?: string | null
+    phone?: string | null
+  }
+}) {
+  const headers = await getAuthHeaders()
+
+  if (!headers || !("authorization" in headers)) {
+    return { success: false, error: "Please log in to your account first" }
+  }
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/vendors/me`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...headers,
+      },
+      body: JSON.stringify(data),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: result.message || "Failed to update vendor profile",
+      }
+    }
+
+    return { success: true, vendor: result.vendor, vendor_admin: result.vendor_admin }
+  } catch (error) {
+    console.error("Error updating vendor profile:", error)
+    return { success: false, error: "Something went wrong" }
+  }
+}
+
+export async function getVendorPaymentSettings(): Promise<VendorPaymentSettings> {
+  const headers = await getAuthHeaders()
+
+  if (!headers || !("authorization" in headers)) {
+    return {
+      payout_phone_number: null,
+      payout_network: null,
+    }
+  }
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/vendors/payment-settings`, {
+      method: "GET",
+      headers,
+      cache: "no-store",
+    })
+
+    if (!response.ok) {
+      return {
+        payout_phone_number: null,
+        payout_network: null,
+      }
+    }
+
+    const result = await response.json()
+    return (
+      result.payment_settings || {
+        payout_phone_number: null,
+        payout_network: null,
+      }
+    )
+  } catch (error) {
+    console.error("Error fetching vendor payment settings:", error)
+    return {
+      payout_phone_number: null,
+      payout_network: null,
+    }
+  }
+}
+
+export async function updateVendorPaymentSettings(data: VendorPaymentSettings) {
+  const headers = await getAuthHeaders()
+
+  if (!headers || !("authorization" in headers)) {
+    return { success: false, error: "Please log in to your account first" }
+  }
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/vendors/payment-settings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...headers,
+      },
+      body: JSON.stringify(data),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: result.message || "Failed to update payout settings",
+      }
+    }
+
+    return { success: true, payment_settings: result.payment_settings }
+  } catch (error) {
+    console.error("Error updating vendor payment settings:", error)
     return { success: false, error: "Something went wrong" }
   }
 }

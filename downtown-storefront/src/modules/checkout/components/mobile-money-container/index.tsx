@@ -106,10 +106,12 @@ const MobileMoneyContainer: React.FC<MobileMoneyContainerProps> = ({
       value={paymentProviderId}
       disabled={disabled}
       className={clx(
-        "flex flex-col gap-y-2 text-small-regular cursor-pointer py-4 border rounded-rounded px-8 mb-2 hover:shadow-borders-interactive-with-active",
+        "mb-3 flex cursor-pointer flex-col gap-y-2 rounded-[24px] border px-6 py-5 text-small-regular transition hover:border-stone-900 hover:shadow-[0_12px_30px_rgba(57,45,24,0.08)]",
         {
-          "border-ui-border-interactive":
+          "border-stone-900 bg-stone-50/70":
             selectedPaymentOptionId === paymentProviderId,
+          "border-stone-200 bg-white":
+            selectedPaymentOptionId !== paymentProviderId,
         }
       )}
     >
@@ -129,7 +131,7 @@ const MobileMoneyContainer: React.FC<MobileMoneyContainerProps> = ({
         <div className="mt-4 space-y-4">
           {/* Network Selection */}
           <div>
-            <Text className="txt-medium-plus text-ui-fg-base mb-2">
+            <Text className="mb-2 text-sm font-medium text-stone-700">
               Select your network:
             </Text>
             <div className="flex gap-4">
@@ -137,10 +139,11 @@ const MobileMoneyContainer: React.FC<MobileMoneyContainerProps> = ({
                 type="button"
                 onClick={() => handleNetworkChange("mtn")}
                 className={clx(
-                  "flex-1 py-3 px-4 border rounded-lg transition-all",
+                  "flex-1 rounded-[20px] border px-4 py-4 transition-all",
                   {
-                    "border-yellow-500 bg-yellow-50": network === "mtn",
-                    "border-ui-border-base hover:border-yellow-300":
+                    "border-yellow-500 bg-yellow-50 shadow-[inset_0_0_0_1px_rgba(234,179,8,0.15)]":
+                      network === "mtn",
+                    "border-stone-200 bg-white hover:border-yellow-300":
                       network !== "mtn",
                   }
                 )}
@@ -156,10 +159,11 @@ const MobileMoneyContainer: React.FC<MobileMoneyContainerProps> = ({
                 type="button"
                 onClick={() => handleNetworkChange("airtel")}
                 className={clx(
-                  "flex-1 py-3 px-4 border rounded-lg transition-all",
+                  "flex-1 rounded-[20px] border px-4 py-4 transition-all",
                   {
-                    "border-red-500 bg-red-50": network === "airtel",
-                    "border-ui-border-base hover:border-red-300":
+                    "border-red-500 bg-red-50 shadow-[inset_0_0_0_1px_rgba(220,38,38,0.12)]":
+                      network === "airtel",
+                    "border-stone-200 bg-white hover:border-red-300":
                       network !== "airtel",
                   }
                 )}
@@ -176,11 +180,11 @@ const MobileMoneyContainer: React.FC<MobileMoneyContainerProps> = ({
 
           {/* Phone Number Input */}
           <div>
-            <Text className="txt-medium-plus text-ui-fg-base mb-2">
+            <Text className="mb-2 text-sm font-medium text-stone-700">
               Enter your phone number:
             </Text>
             <div className="flex items-center gap-2">
-              <span className="text-ui-fg-subtle px-3 py-2 bg-ui-bg-subtle border rounded-l-lg">
+              <span className="rounded-l-2xl border border-stone-200 bg-stone-100 px-4 py-3 text-stone-600">
                 +256
               </span>
               <input
@@ -189,15 +193,20 @@ const MobileMoneyContainer: React.FC<MobileMoneyContainerProps> = ({
                 onChange={handlePhoneChange}
                 placeholder="7XX XXX XXX"
                 className={clx(
-                  "flex-1 px-4 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-ui-border-interactive",
+                  "flex-1 rounded-r-2xl border px-4 py-3 focus:outline-none",
                   {
                     "border-red-500":
                       phoneNumber && !validatePhoneNumber(phoneNumber),
+                    "border-stone-200 bg-white":
+                      !phoneNumber || validatePhoneNumber(phoneNumber),
                   }
                 )}
-                maxLength={12}
+                maxLength={13}
               />
             </div>
+            <Text className="mt-2 text-xs uppercase tracking-[0.2em] text-stone-400">
+              Use MTN or Airtel Uganda numbers only
+            </Text>
             {phoneNumber && !validatePhoneNumber(phoneNumber) && (
               <Text className="text-red-500 text-sm mt-1">
                 Please enter a valid Uganda phone number
@@ -207,8 +216,8 @@ const MobileMoneyContainer: React.FC<MobileMoneyContainerProps> = ({
 
           {/* Instructions */}
           {network && validatePhoneNumber(phoneNumber) && (
-            <div className="bg-ui-bg-subtle p-4 rounded-lg">
-              <Text className="txt-medium text-ui-fg-subtle">
+            <div className="rounded-[20px] border border-stone-200 bg-stone-100 p-4">
+              <Text className="text-sm text-stone-700">
                 When you click &quot;Place order&quot;, you will receive a USSD
                 prompt on your phone to authorize the payment.
               </Text>

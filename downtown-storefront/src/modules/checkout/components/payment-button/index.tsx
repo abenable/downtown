@@ -71,6 +71,7 @@ const MobileMoneyPaymentButton = ({
         onClick={handlePayment}
         size="large"
         isLoading={submitting}
+        className="w-full rounded-full bg-stone-900 text-white hover:bg-stone-800"
         data-testid={dataTestId}
       >
         Send prompt and place order
@@ -109,6 +110,7 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
         isLoading={submitting}
         onClick={handlePayment}
         size="large"
+        className="w-full rounded-full bg-stone-900 text-white hover:bg-stone-800"
         data-testid="submit-order-button"
       >
         Place order

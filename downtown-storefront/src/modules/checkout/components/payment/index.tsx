@@ -41,6 +41,9 @@ const Payment = ({
   const pathname = usePathname()
 
   const isOpen = searchParams.get("step") === "payment"
+  const currentProviderStatus = activeSession?.data?.provider_status as
+    | string
+    | undefined
 
   const setPaymentMethod = async (method: string) => {
     setError(null)
@@ -109,12 +112,12 @@ const Payment = ({
   }, [isOpen])
 
   return (
-    <div className="bg-white">
-      <div className="flex flex-row items-center justify-between mb-6">
+    <div className="rounded-[28px] border border-stone-200 bg-white/90 p-6 shadow-[0_20px_60px_rgba(57,45,24,0.08)] backdrop-blur">
+      <div className="mb-6 flex flex-row items-center justify-between">
         <Heading
           level="h2"
           className={clx(
-            "flex flex-row text-3xl-regular gap-x-2 items-baseline",
+            "flex flex-row items-baseline gap-x-2 font-serif text-3xl text-stone-900",
             {
               "opacity-50 pointer-events-none select-none":
                 !isOpen && !paymentReady,
@@ -128,7 +131,7 @@ const Payment = ({
           <Text>
             <button
               onClick={handleEdit}
-              className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
+              className="rounded-full border border-stone-300 px-4 py-2 text-sm text-stone-700 transition hover:border-stone-900 hover:text-stone-900"
               data-testid="edit-payment-button"
             >
               Edit
@@ -138,6 +141,17 @@ const Payment = ({
       </div>
       <div>
         <div className={isOpen ? "block" : "hidden"}>
+          <div className="mb-6 rounded-[24px] border border-stone-200 bg-[linear-gradient(135deg,#f6f1e7_0%,#fbfaf7_100%)] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-stone-500">
+              Uganda mobile money
+            </p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-700">
+              Choose your network, enter the number that should receive the prompt, then
+              continue to review. The actual payment request is triggered when you place the
+              order.
+            </p>
+          </div>
+
           {!paidByGiftcard && availablePaymentMethods?.length && (
             <>
               <RadioGroup
@@ -192,7 +206,7 @@ const Payment = ({
 
           <Button
             size="large"
-            className="mt-6"
+            className="mt-6 rounded-full bg-stone-900 px-6 text-white hover:bg-stone-800"
             onClick={handleSubmit}
             isLoading={isLoading}
             disabled={
@@ -207,28 +221,28 @@ const Payment = ({
 
         <div className={isOpen ? "hidden" : "block"}>
           {cart && paymentReady && activeSession ? (
-            <div className="flex items-start gap-x-1 w-full">
-              <div className="flex flex-col w-1/3">
-                <Text className="txt-medium-plus text-ui-fg-base mb-1">
+            <div className="grid gap-4 small:grid-cols-3">
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4">
+                <Text className="mb-1 text-sm font-medium text-stone-700">
                   Payment method
                 </Text>
                 <Text
-                  className="txt-medium text-ui-fg-subtle"
+                  className="text-sm text-stone-600"
                   data-testid="payment-method-summary"
                 >
                   {paymentInfoMap[activeSession?.provider_id]?.title ||
                     activeSession?.provider_id}
                 </Text>
               </div>
-              <div className="flex flex-col w-1/3">
-                <Text className="txt-medium-plus text-ui-fg-base mb-1">
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4">
+                <Text className="mb-1 text-sm font-medium text-stone-700">
                   Payment details
                 </Text>
                 <div
-                  className="flex gap-2 txt-medium text-ui-fg-subtle items-center"
+                  className="flex items-center gap-2 text-sm text-stone-600"
                   data-testid="payment-details-summary"
                 >
-                  <Container className="flex items-center h-7 w-fit p-2 bg-ui-button-neutral-hover">
+                  <Container className="flex h-8 w-fit items-center rounded-full bg-white p-2 shadow-sm">
                     {paymentInfoMap[selectedPaymentMethod]?.icon || (
                       <CreditCard />
                     )}
@@ -241,6 +255,16 @@ const Payment = ({
                       : "Another step will appear"}
                   </Text>
                 </div>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-4">
+                <Text className="mb-1 text-sm font-medium text-stone-700">
+                  Prompt status
+                </Text>
+                <Text className="text-sm text-stone-600">
+                  {currentProviderStatus
+                    ? `${currentProviderStatus}. Complete the prompt on your phone if requested.`
+                    : "Pending. The prompt will be sent when you place the order."}
+                </Text>
               </div>
             </div>
           ) : paidByGiftcard ? (
