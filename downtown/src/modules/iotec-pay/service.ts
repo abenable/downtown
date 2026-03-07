@@ -206,16 +206,10 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
       const paymentStatus = this.mapPaymentSessionStatus(providerStatus);
 
       return {
-        status:
-          paymentStatus === PaymentSessionStatus.ERROR
-            ? PaymentSessionStatus.ERROR
-            : PaymentSessionStatus.AUTHORIZED,
+        status: paymentStatus,
         data: {
           ...data,
-          status:
-            paymentStatus === PaymentSessionStatus.ERROR
-              ? PaymentSessionStatus.ERROR
-              : PaymentSessionStatus.AUTHORIZED,
+          status: paymentStatus,
           phone_number: phone,
           provider_status: providerStatus,
           provider_reference:
@@ -243,6 +237,7 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
 
   async updatePayment(input: UpdatePaymentInput): Promise<UpdatePaymentOutput> {
     const data = (input.data || {}) as Record<string, unknown>;
+    const reference = (data.reference as string) || `CD-${Date.now()}`;
 
     return {
       data: {
@@ -251,12 +246,11 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
         currency_code: String(input.currency_code || "UGX").toUpperCase(),
         phone_number: this.normalizePhoneNumber(data.phone_number as string | undefined),
         network: this.normalizeNetwork(data.network as string | undefined),
-        reference: (data.reference as string) || `CD-${Date.now()}`,
+        reference,
         external_id:
           (data.external_id as string) ||
           (data.externalId as string) ||
-          (data.reference as string) ||
-          `CD-${Date.now()}`,
+          reference,
       },
       status: PaymentSessionStatus.PENDING,
     };
@@ -346,19 +340,19 @@ class IotecPayProviderService extends AbstractPaymentProvider<IotecPayOptions> {
     return null;
   }
 
-  private mapPaymentSessionStatus(status?: IotecCollectionStatus) {
-    switch (status) {
-      case "Success":
+  private mapPaymentSessionStatus(status?: string | null) {
+    switch (status?.toLowerCase()) {
+      case "success":
         return PaymentSessionStatus.AUTHORIZED;
-      case "Failed":
-      case "RolledBack":
-      case "Cancelled":
-      case "Rejected":
+      case "failed":
+      case "rolledback":
+      case "cancelled":
+      case "rejected":
         return PaymentSessionStatus.ERROR;
-      case "Pending":
-      case "SentToVendor":
-      case "AwaitingApproval":
-      case "Scheduled":
+      case "pending":
+      case "senttovendor":
+      case "awaitingapproval":
+      case "scheduled":
       default:
         return PaymentSessionStatus.PENDING;
     }
