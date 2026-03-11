@@ -5,6 +5,7 @@ import type {
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 import { z } from "zod";
 import { MARKETPLACE_MODULE } from "../../../modules/marketplace";
+import type MarketplaceModuleService from "../../../modules/marketplace/service";
 
 const PaymentSettingsSchema = z.object({
   payout_phone_number: z.string().min(10).max(15),
@@ -51,7 +52,8 @@ export const POST = async (
   res: MedusaResponse
 ) => {
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
-  const marketplaceService = req.scope.resolve(MARKETPLACE_MODULE);
+  const marketplaceService: MarketplaceModuleService =
+    req.scope.resolve(MARKETPLACE_MODULE);
 
   // Validate input
   const validatedBody = PaymentSettingsSchema.safeParse(req.body);

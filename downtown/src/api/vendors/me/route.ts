@@ -3,6 +3,7 @@ import type {
   MedusaResponse,
 } from "@medusajs/framework/http";
 import { MARKETPLACE_MODULE } from "../../../modules/marketplace";
+import type MarketplaceModuleService from "../../../modules/marketplace/service";
 import { getVendorFromAuth } from "../helpers";
 import type { UpdateVendorMeType } from "../validators";
 
@@ -61,7 +62,8 @@ export const PUT = async (
     });
   }
 
-  const marketplaceService = req.scope.resolve(MARKETPLACE_MODULE);
+  const marketplaceService: MarketplaceModuleService =
+    req.scope.resolve(MARKETPLACE_MODULE);
   const { vendor, admin } = req.validatedBody;
 
   const vendorUpdate: Record<string, string | null> = {

@@ -5,6 +5,7 @@ import type {
 import { z } from "zod";
 import { REFUND_MODULE } from "../../../../../modules/refund";
 import { RefundStatus } from "../../../../../modules/refund/models/refund-request";
+import type RefundModuleService from "../../../../../modules/refund/service";
 
 const RejectRefundSchema = z.object({
   rejection_reason: z.string().min(1),
@@ -16,7 +17,7 @@ export const POST = async (
   res: MedusaResponse
 ) => {
   const { id } = req.params;
-  const refundService = req.scope.resolve(REFUND_MODULE);
+  const refundService: RefundModuleService = req.scope.resolve(REFUND_MODULE);
 
   // Validate input
   const validatedBody = RejectRefundSchema.safeParse(req.body);

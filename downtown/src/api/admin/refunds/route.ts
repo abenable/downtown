@@ -3,13 +3,14 @@ import type {
   MedusaResponse,
 } from "@medusajs/framework/http";
 import { REFUND_MODULE } from "../../../modules/refund";
+import type RefundModuleService from "../../../modules/refund/service";
 
 // GET /admin/refunds - List all refund requests
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
-  const refundService = req.scope.resolve(REFUND_MODULE);
+  const refundService: RefundModuleService = req.scope.resolve(REFUND_MODULE);
 
   const { status, vendor_id, customer_id, limit = 50, offset = 0 } = req.query;
 
