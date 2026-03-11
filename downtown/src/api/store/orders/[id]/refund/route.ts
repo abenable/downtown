@@ -6,6 +6,7 @@ import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/util
 import { z } from "zod";
 import { REFUND_MODULE } from "../../../../../modules/refund";
 import { RefundStatus, RefundReason } from "../../../../../modules/refund/models/refund-request";
+import type RefundModuleService from "../../../../../modules/refund/service";
 
 const RefundRequestSchema = z.object({
   amount: z.number().positive(),
@@ -22,7 +23,7 @@ export const POST = async (
 ) => {
   const { id: orderId } = req.params;
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
-  const refundService = req.scope.resolve(REFUND_MODULE);
+  const refundService: RefundModuleService = req.scope.resolve(REFUND_MODULE);
 
   // Validate input
   const validatedBody = RefundRequestSchema.safeParse(req.body);
@@ -137,7 +138,7 @@ export const GET = async (
 ) => {
   const { id: orderId } = req.params;
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
-  const refundService = req.scope.resolve(REFUND_MODULE);
+  const refundService: RefundModuleService = req.scope.resolve(REFUND_MODULE);
 
   // Get order and verify ownership
   const { data: orders } = await query.graph({

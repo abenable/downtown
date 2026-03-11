@@ -1,6 +1,7 @@
 import { ExecArgs } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 import { PICKUP_LOCATION_MODULE } from "../modules/pickup-location";
+import type PickupLocationModuleService from "../modules/pickup-location/service";
 
 /**
  * Seed pickup locations for Downtown marketplace
@@ -9,7 +10,8 @@ import { PICKUP_LOCATION_MODULE } from "../modules/pickup-location";
  */
 export default async function seedPickupLocations({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
-  const pickupLocationService = container.resolve(PICKUP_LOCATION_MODULE);
+  const pickupLocationService: PickupLocationModuleService =
+    container.resolve(PICKUP_LOCATION_MODULE);
 
   logger.info("Seeding pickup locations...");
 

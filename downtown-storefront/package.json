@@ -20,7 +20,7 @@
     "@medusajs/ui": "latest",
     "@radix-ui/react-accordion": "^1.2.1",
     "lodash": "^4.17.21",
-    "next": "15.3.8",
+    "next": "^15.5.12",
     "pg": "^8.11.3",
     "qs": "^6.12.1",
     "react": "19.0.3",

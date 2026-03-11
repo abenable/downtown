@@ -1,6 +1,7 @@
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk";
 import { PAYOUT_MODULE } from "../../../modules/payout";
 import { PayoutStatus, MobileNetwork } from "../../../modules/payout/models/payout";
+import type PayoutModuleService from "../../../modules/payout/service";
 
 type CreatePayoutInput = {
   vendor_id: string;
@@ -18,7 +19,7 @@ type CreatePayoutInput = {
 export const createPayoutStep = createStep(
   "create-payout-step",
   async (input: CreatePayoutInput, { container }) => {
-    const payoutService = container.resolve(PAYOUT_MODULE);
+    const payoutService: PayoutModuleService = container.resolve(PAYOUT_MODULE);
 
     const payout = await payoutService.createPayouts({
       vendor_id: input.vendor_id,
@@ -41,7 +42,7 @@ export const createPayoutStep = createStep(
   async (payoutId, { container }) => {
     if (!payoutId) return;
 
-    const payoutService = container.resolve(PAYOUT_MODULE);
+    const payoutService: PayoutModuleService = container.resolve(PAYOUT_MODULE);
     await payoutService.deletePayouts(payoutId);
   }
 );

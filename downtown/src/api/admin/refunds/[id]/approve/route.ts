@@ -4,6 +4,7 @@ import type {
 } from "@medusajs/framework/http";
 import { REFUND_MODULE } from "../../../../../modules/refund";
 import { RefundStatus } from "../../../../../modules/refund/models/refund-request";
+import type RefundModuleService from "../../../../../modules/refund/service";
 
 // POST /admin/refunds/:id/approve - Approve a refund request
 export const POST = async (
@@ -13,7 +14,7 @@ export const POST = async (
   res: MedusaResponse
 ) => {
   const { id } = req.params;
-  const refundService = req.scope.resolve(REFUND_MODULE);
+  const refundService: RefundModuleService = req.scope.resolve(REFUND_MODULE);
   const { admin_notes } = req.body || {};
 
   const refund = await refundService.retrieveRefundRequest(id);

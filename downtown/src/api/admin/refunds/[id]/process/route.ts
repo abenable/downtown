@@ -5,6 +5,7 @@ import type {
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils";
 import { REFUND_MODULE } from "../../../../../modules/refund";
 import { RefundStatus } from "../../../../../modules/refund/models/refund-request";
+import type RefundModuleService from "../../../../../modules/refund/service";
 
 // POST /admin/refunds/:id/process - Process an approved refund
 export const POST = async (
@@ -12,7 +13,7 @@ export const POST = async (
   res: MedusaResponse
 ) => {
   const { id } = req.params;
-  const refundService = req.scope.resolve(REFUND_MODULE);
+  const refundService: RefundModuleService = req.scope.resolve(REFUND_MODULE);
   const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER);
 
   const refund = await refundService.retrieveRefundRequest(id);

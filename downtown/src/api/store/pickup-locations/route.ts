@@ -1,12 +1,14 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 import { PICKUP_LOCATION_MODULE } from "../../../modules/pickup-location";
+import type PickupLocationModuleService from "../../../modules/pickup-location/service";
 
 /**
  * GET /store/pickup-locations
  * Retrieve all active pickup locations
  */
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
-  const pickupLocationService = req.scope.resolve(PICKUP_LOCATION_MODULE);
+  const pickupLocationService: PickupLocationModuleService =
+    req.scope.resolve(PICKUP_LOCATION_MODULE);
 
   try {
     const pickupLocations = await pickupLocationService.listPickupLocations({

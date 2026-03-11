@@ -8,6 +8,7 @@ import {
 import { PAYOUT_MODULE } from "../../modules/payout";
 import { PayoutStatus } from "../../modules/payout/models/payout";
 import { MedusaError } from "@medusajs/framework/utils";
+import type PayoutModuleService from "../../modules/payout/service";
 
 type ProcessPayoutWorkflowInput = {
   payout_id: string;
@@ -18,7 +19,7 @@ type ProcessPayoutWorkflowInput = {
 const validatePayoutStep = createStep(
   "validate-payout-step",
   async (input: { payout_id: string }, { container }) => {
-    const payoutService = container.resolve(PAYOUT_MODULE);
+    const payoutService: PayoutModuleService = container.resolve(PAYOUT_MODULE);
 
     const payout = await payoutService.retrievePayout(input.payout_id);
 
@@ -56,7 +57,7 @@ const setPayoutProcessingStep = createStep(
     },
     { container }
   ) => {
-    const payoutService = container.resolve(PAYOUT_MODULE);
+    const payoutService: PayoutModuleService = container.resolve(PAYOUT_MODULE);
 
     await payoutService.updatePayouts([{
       id: input.payout_id,
@@ -69,7 +70,7 @@ const setPayoutProcessingStep = createStep(
   async (payoutId, { container }) => {
     if (!payoutId) return;
 
-    const payoutService = container.resolve(PAYOUT_MODULE);
+    const payoutService: PayoutModuleService = container.resolve(PAYOUT_MODULE);
     await payoutService.updatePayouts([{
       id: payoutId,
       status: PayoutStatus.APPROVED,
@@ -88,7 +89,7 @@ const completePayoutStep = createStep(
     },
     { container }
   ) => {
-    const payoutService = container.resolve(PAYOUT_MODULE);
+    const payoutService: PayoutModuleService = container.resolve(PAYOUT_MODULE);
 
     const updateData: any = {
       id: input.payout_id,
@@ -111,7 +112,7 @@ const completePayoutStep = createStep(
   async (payoutId, { container }) => {
     if (!payoutId) return;
 
-    const payoutService = container.resolve(PAYOUT_MODULE);
+    const payoutService: PayoutModuleService = container.resolve(PAYOUT_MODULE);
     await payoutService.updatePayouts([{
       id: payoutId,
       status: PayoutStatus.APPROVED,

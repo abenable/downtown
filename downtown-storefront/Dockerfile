@@ -1,16 +1,16 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Install bun and dependencies for building
-RUN apk add --no-cache libc6-compat && npm install -g bun
+# Install dependencies required for building
+RUN apk add --no-cache libc6-compat
 
 # Copy package files
-COPY package.json bun.lockb* ./
+COPY package.json package-lock.json ./
 
-# Install dependencies with bun
-RUN bun install
+# Install dependencies with npm
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -26,11 +26,11 @@ ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
 ENV NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=$NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 ENV NEXT_PUBLIC_DEFAULT_REGION=$NEXT_PUBLIC_DEFAULT_REGION
 
-# Build the application with npm
+# Build the application
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
